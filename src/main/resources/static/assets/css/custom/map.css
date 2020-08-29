@@ -1,0 +1,75 @@
+:root {
+  /*LIGHT THEME*/
+  --background-light: rgb(214, 228, 216);
+  --neo-shadow-light:rgba(255, 255, 255, .4);
+  --neo-shadow-inset-light: rgba(70, 70, 70, .22);
+  --side-card-light: #9dd5f1;
+  /*DARK THEME*/
+  --background-dark: #0a0a1b;
+  --neo-shadow-dark: rgba(0, 0, 0, .4);
+  --neo-shadow-inset-dark: rgba(0, 0, 0, .22);
+  --side-card-dark: var(--green-color);
+  /*GENERAL COLORS*/
+  --light-green-color: rgb(87, 172, 96);
+  --dark-green-color: rgb(77, 99, 95);
+  --pink-color: rgb(226, 79, 170);
+  --light-color: #b8aeae;
+  --light-gray-color: #807d7d;
+  --sidebar-width: 350px;
+  --button-height: 28px;
+  --spending-progress-size: 10rem;
+  --menu-card-size: 110px;
+  --transition-duration: 400ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  color: black;
+  background: rgba(108, 89, 218, 0.5);
+}
+
+body {
+  background-color: var(--background-light) !important;
+}
+
+section {
+  display: flex;
+  height: 100vh;
+}
+
+nav {
+  flex: 1;
+  background-color: var(--dark-green-color);
+}
+
+main {
+  flex: 4;
+  position: relative;
+}
+
+main .map__top {
+  top: 3rem;
+  margin-left: 5rem;
+  position: fixed;
+  width: var(--sidebar-width);
+  height: var(--button-height);
+  z-index: 10000;
+}
+
+main .map__top input {
+  border: none;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+  background-color: #fff;
+}
+
+main .map__body {
+  height: 100vh;
+}
+/*# sourceMappingURL=map.css.map */

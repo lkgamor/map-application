@@ -1,0 +1,71 @@
+<!-- ***********************************************************************
+*********************************CONFIDENTIAL**************************
+*********************************************************************** -->
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Map</title>
+	<link rel="icon" type="image/png" th:href="@{/assets/images/icon/favicon.ico}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/fontawesome-free-5.5.0/css/all.min.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/bootstrap/bootstrap.min.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/leaflet/leaflet.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/nprogress/nprogress.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/sweetalert/sweetalert.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/custom/map.css}">
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css'/>
+
+    <noscript><link rel="stylesheet" th:href="@{/assets/css/no_script.css}"></noscript>	
+    
+    <script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
+</head>
+
+<body>			
+    
+    <section>
+        <nav></nav>
+        <main>
+        	<div class="map__top">
+        		<input class="form-control shadow-sm" type="search" placeholder="Find a place">
+        	</div>
+        	<div class="map__body" id="map"></div>
+        	<div class="map__bottom"></div>
+        </main>
+    </section>
+    
+	<script th:src="@{/assets/js/vendor/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/jquery/jquery-3.3.1.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/jquery/jquery-ui.min.js}"></script>	
+	<script th:src="@{/assets/js/vendor/moment/moment.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/nprogress/nprogress.js}"></script>
+	<script th:src="@{/assets/js/vendor/bootstrap/bootstrap.min.js}"></script>
+    <script th:src="@{/assets/js/vendor/sweetalert/sweetalert.min.js}"></script>
+    <script th:src="@{/assets/js/vendor/leaflet/leaflet.js}"></script>
+    <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet.js}"></script>
+    <script th:src="@{/assets/js/vendor/leaflet/L.Icon.Pulse.js}"></script>
+    <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet-geocoder.js}"></script>
+    
+    <script th:inline="javascript">
+		const CONTEXT = [[@{/}]];
+		const MAP_KEY = [[${mapKey}]];
+		NProgress.configure({showSpinner: false});
+    </script>
+
+    <script th:src="@{/assets/js/custom/map.js}" type="module"></script>
+
+	<!-- NOSCRIPT PROMPT IF JS IS DISABLED -->
+	<noscript>
+		<div id="noscript">
+			<img alt="Logo" th:src="@{/assets/images/app_name.png}"><br>
+			<h1 class="noscript__header mt-2 text-dark">This Application Requires JavaScript</h1>
+			<div class="noscript__body">
+				<div class="text-secondary">Either your browser does not support JavaScript, or you have disabled JavaScript.</div>
+			</div>
+		</div>
+	</noscript>
+	
+</body>
+</html>
