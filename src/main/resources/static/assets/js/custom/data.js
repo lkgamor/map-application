@@ -1,20 +1,31 @@
-let DOMStrings = {
-	map: 'map'
+const DOMStrings = {
+	map: 'map',
+	beforeEnd: 'beforeend',
+	afterBegin: 'afterbegin'
 }
 
-let DOMClasses = {
-	
+const DOMClasses = {
+	watchListCard: '.watchlist__card',
+	bottomCardsContainer: '.map__body--bottom-container'
 }
 
-let DOMIds = {
-	map: '#map'
+const DOMIds = {
+	map: '#map',
+	googleButton: '#google-button',
+	mapboxButton: '#mapbox-button',
+	bingButton: '#bing-button',
+	openstreetButton: '#openstreet-button',
+	totalWatchList: '#total-watchlist'
 }
 
-let DOMElements = {
+const DOMElements = {
+	watchListCheckBox: 'input.watchlist__checkbox',
 	mapElement: '<nav id="map"></nav>'
 }
 
-let DOMEndpoints = {
+const DOMEndpoints = {
+	GoogleTileLayer: '//{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+	GoogleAttribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, Imagery © <a href="https://www.maps.google.com/">Google Maps</a>',
 	OSMTileLayer: '//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 	OSMAttrbution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 	MapboxType: 'mapbox/light-v10',
@@ -22,12 +33,13 @@ let DOMEndpoints = {
 	MapboxAttribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
 }
 
-let DOMEvents = {
+const DOMEvents = {
 	click: 'click',
-	checked: 'checked'
+	checked: 'checked',
+	change: 'change'
 }
 
-let DOMHTTPMethods = {
+const DOMHTTPMethods = {
 	postMethod : 'POST',
 	getMethod : 'GET',
 	deleteMethod : 'DELETE',

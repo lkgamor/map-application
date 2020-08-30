@@ -1,6 +1,6 @@
 package com.louisga.mapapplication.controllers;
 
-import com.louisga.mapapplication.config.MapConfigurations;
+import com.louisga.mapapplication.config.MapKeysConfiguration;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,12 +12,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MapController {
     
-    private final MapConfigurations mapConfigurations;
+    private final MapKeysConfiguration mapKeysConfiguration;
 
     @GetMapping("/")
     public String getMap(Model model) {
 
-        model.addAttribute("mapKey", mapConfigurations.getKey());
+        model.addAttribute("bingKey", mapKeysConfiguration.getBingKey());
+        model.addAttribute("mapboxKey", mapKeysConfiguration.getMapboxKey());
         return "map.html";
     }
 }

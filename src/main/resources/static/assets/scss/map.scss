@@ -1,34 +1,55 @@
-:root {
-    /*LIGHT THEME*/
-    --background-light: rgb(214, 228, 216);
+$backgroundColor: rgb(247, 252, 248);
+$primaryColor: rgb(77, 99, 95);
+$secondaryColor: rgb(87, 172, 96);
 
-    --neo-shadow-light:rgba(255, 255, 255, .4);
-    --neo-shadow-inset-light: rgba(70, 70, 70, .22);
+$neoShadowLight:rgba(255, 255, 255, .4);
+$neoShadowInsetLight: rgba(70, 70, 70, .22);
 
-    --side-card-light: #9dd5f1; 
-    
+$buttonHeight: 28px;
+$sidebarWidth: 350px;
+$bottomContainerHeight: 200px;
+$transitionDuration: 400ms;
 
-    /*DARK THEME*/
-    --background-dark: #0a0a1b;
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    --neo-shadow-dark: rgba(0, 0, 0, .4);
-    --neo-shadow-inset-dark: rgba(0, 0, 0, .22);
+@mixin neomorph-button {
+    cursor: pointer;    
+    outline: none !important;
+    padding: unset !important;  
+    border-radius: 1.2rem;
+    width: $buttonHeight * 2;
+    height: $buttonHeight * 2;
+    border: 4px solid $backgroundColor; 
+    transition: $transitionDuration;
+}
 
-    --side-card-dark: var(--green-color);
+@mixin neomorph-inset {
+    border: none !important;
+    background: $backgroundColor;
+    box-shadow: 
+        1px 1px 15px $neoShadowLight, 
+        7px 7px 15px $neoShadowInsetLight, 
+        inset -2px -2px 2px $neoShadowLight, 
+        inset 2px 0px 8px 4px $neoShadowInsetLight !important;
+}
 
+@mixin nemorph-outset {
+    border: none !important;    
+    background: $backgroundColor; 
+    box-shadow: 
+        -7px -7px 15px $neoShadowLight,
+        7px 7px 15px $neoShadowInsetLight !important;
+}
 
-    /*GENERAL COLORS*/
-    --light-green-color: rgb(87, 172, 96);
-    --dark-green-color: rgb(77, 99, 95);
-    --pink-color: rgb(226, 79, 170);
-    --light-color: #b8aeae;
-    --light-gray-color: #807d7d;
-
-    --sidebar-width: 350px;
-    --button-height: 28px;
-    --spending-progress-size: 10rem;
-    --menu-card-size: 110px;
-    --transition-duration: 400ms;
+@mixin map-top-elements {
+    border-radius: 2rem;
+    width: $sidebarWidth;
+    box-shadow: 0 2px 15px rgba(0,0,0,.2);
+    background-color: $backgroundColor;    
 }
 
 *, 
@@ -40,13 +61,12 @@
 }
 
 ::selection {
-    color: black;
-    background: rgba(108, 89, 218, .5);
+    color: rgba(17, 19, 19, 0.5);
+    background: rgba(154, 173, 169, .9);
 }
 
-
 body {    
-    background-color: var(--background-light) !important;
+    background-color: $backgroundColor;
 }
 
 section {
@@ -54,32 +74,291 @@ section {
     height: 100vh;
 }
 
-nav {        
-    //width: var(--sidebar-width);
+.map__sidebar {        
     flex: 1;
-    background-color: var(--dark-green-color);
-}
+    padding: 1rem;
+    background-color: $primaryColor;
 
-main {
-    flex: 4;
-    position: relative;
+    .sidebar__logo {
+        @include flex-center();
+        height: 10%;
+    }
 
-    .map__top {
-        top: 3rem;
-        margin-left: 5rem;
-        position: fixed;
-        width: var(--sidebar-width);
-        height: var(--button-height);
-        z-index: 10000;
+    .logo {
+        @include neomorph-button();
+        position: relative;
+        border-top-left-radius: .5rem;
+        border-top-right-radius: 50%;
+        border-bottom-right-radius: 50%;
+        border-bottom-left-radius: 50%;
+        @include neomorph-inset();
 
-        input {
-            border: none;
-            box-shadow: 0 2px 15px rgba(0,0,0,.2);
-            background-color: #fff;
+        &-text {
+            font-family: bungee,sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 1.5rem;
+            color: $backgroundColor;
+            letter-spacing: 1px;
+            margin-left: 1rem;
         }
     }
 
-    .map__body {
+    .sidebar__content {
+        height: 90%;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        margin: auto;
+        border-radius: 1.5rem;
+        @include neomorph-inset();
+
+        .watchlist__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem 1rem;
+
+            &-title {
+                font-weight: 500;
+            }
+
+            &-total {
+                font-weight: 900;
+                font-size: 1.5rem;
+                border-radius: 2rem;
+            }
+        }
+
+        .watchlist__body {
+            padding: 0 2rem;
+            background: transparent !important;
+            //scroll-behavior: smooth;
+            overflow-y: auto;
+            height: 95%;
+
+            &-title {
+                display: flex;
+                justify-content: space-between;
+                
+                margin-top: 3rem;
+                margin-bottom: 1rem;
+            }
+
+            &::-webkit-scrollbar {
+                height: 0.5em;
+                width: 0;
+                transition: all 500ms ease;
+            }
+    
+            &::-webkit-scrollbar-track {
+                -webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+            }
+    
+            &::-webkit-scrollbar-thumb {
+                background: $backgroundColor; 
+                outline: 1px solid $backgroundColor;
+                cursor: pointer;
+            }
+    
+        }
+
+        .watchlist__content,
+        .watchlist__card > div {    
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .watchlist__card {
+            padding: .5rem;
+            width: 100%;
+            height: $buttonHeight * 3;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-radius: .5rem;
+            box-shadow: 
+                -7px -7px 15px $neoShadowLight,
+                7px 7px 15px $neoShadowInsetLight;
+            transition: $transitionDuration;
+        }
+
+        .watchlist__card + .watchlist__card {
+            margin-top: 1.5rem;
+        }
+
+        .watchlist__logo {
+            padding: .5rem;
+            grid-column: 1/2;
+            width: 100%;
+
+            img {
+                width: inherit;
+                border-radius: 50%;
+            }
+        }
+
+        .watchlist__name {
+            grid-column: 2/3;
+
+            .abrev {
+                text-transform: uppercase;
+                font-weight: bold;
+            }
+
+            .price {
+                font-size: .75rem;
+            }
+        }
+
+        .watchlist__rating {
+            flex-direction: row !important;
+            font-size: .85rem;
+            grid-column: 3/4;
+        }
+
+        .watchlist__preference {
+            grid-column: 4/5;
+            padding: .5rem;
+            position: relative;
+        }
+
+        .watchlist__checkbox {
+            width: $buttonHeight * 2;
+            height: $buttonHeight;
+            outline: none !important;
+            border-radius: .5rem;
+            appearance: none;
+            cursor: pointer;
+            @include neomorph-inset();
+
+            &:checked {
+                background: yellowgreen !important;
+            }
+
+            &::before {
+                width: $buttonHeight;
+                height: $buttonHeight;
+                border-radius: .5rem;
+                appearance: none;
+                content: "";
+                position: absolute;
+                margin: auto;
+                top: 0;
+                bottom: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: .75rem;
+                transition: $transitionDuration;
+                @include nemorph-outset();
+            }
+
+            &:checked::before {
+                font-weight: bold;
+                content: "";
+                left: unset;
+                transform: translateX(100%);
+            }
+        }
+    }
+}
+
+.map__body {
+    flex: 4;
+    width: 100%;
+    position: relative;
+
+    &--top {
+        top: 3rem;
+        margin-left: 5rem;
+        position: fixed;
+        z-index: 10000;
+        display: flex;
+
+        input {
+            border: none;
+            @include map-top-elements();
+        }
+        
+        .map__types {
+            display: flex;
+            align-items: center;
+            padding: .2rem;
+            margin-left: 2rem;
+            @include map-top-elements();
+
+            &-button {
+                height: $buttonHeight + 9px;
+                width: 25%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: .9rem;
+                outline: none !important;
+                border-radius: inherit !important;
+                box-shadow: none;
+                cursor: pointer;
+                border: none;
+                transition: $transitionDuration;
+                background: transparent;
+                font-variant: all-small-caps;
+            }
+
+            &-button:hover {          
+                background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
+            }
+
+            &-button:focus {
+                font-weight: 600;           
+                background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
+            }
+        }
+    }
+
+    &--main {
         height: 100vh;
+    }
+
+    &--bottom {
+        width: 95%;
+        max-width: 2096px;
+        height: $bottomContainerHeight;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 1rem;
+        margin: auto;
+        z-index: 10000;
+        overflow-x: auto;
+        overflow-y: hidden;
+        display: flex;
+        border-radius: 1rem;
+    }
+
+    &--bottom-container {
+        display: flex;
+        height: inherit;
+        white-space: nowrap;
+    }
+
+    &-card {
+        width: $sidebarWidth;
+        height: $bottomContainerHeight - 20px;
+        border-radius: 1rem;
+        border: 2px solid $secondaryColor;
+        box-shadow: 0 2px 15px rgba(0,0,0,.2);
+        background: $backgroundColor;
+        transition: background $transitionDuration;
+    }
+
+    &-card:hover {
+        //background: linear-gradient(-45deg, $primaryColor, $secondaryColor);
+        background: $secondaryColor;
+    }
+
+    &-card + &-card {
+        margin-left: 1rem;
     }
 }
