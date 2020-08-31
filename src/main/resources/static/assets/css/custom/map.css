@@ -1,3 +1,6 @@
+/**
+* @author Louis Gamor
+**/
 *,
 *::before,
 *::after {
@@ -50,6 +53,7 @@ section {
   border: none !important;
   background: #f7fcf8;
   box-shadow: 1px 1px 15px rgba(255, 255, 255, 0.4), 7px 7px 15px rgba(70, 70, 70, 0.22), inset -2px -2px 2px rgba(255, 255, 255, 0.4), inset 2px 0px 8px 4px rgba(70, 70, 70, 0.22) !important;
+  background: yellowgreen !important;
 }
 
 .map__sidebar .logo-text {
@@ -229,11 +233,14 @@ section {
 }
 
 .map__body--top {
-  top: 3rem;
-  margin-left: 5rem;
-  position: fixed;
+  top: 2rem;
+  position: absolute;
   z-index: 10000;
   display: flex;
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: auto;
 }
 
 .map__body--top input {
@@ -323,5 +330,10 @@ section {
 
 .map__body-card + .map__body-card {
   margin-left: 1rem;
+}
+
+.selected-map {
+  font-weight: 600;
+  background: linear-gradient(-45deg, rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.25)) !important;
 }
 /*# sourceMappingURL=map.css.map */

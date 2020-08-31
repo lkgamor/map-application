@@ -30,7 +30,8 @@ const DOMEndpoints = {
 	OSMAttrbution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 	MapboxType: 'mapbox/light-v10',
 	MapboxTileLayer: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=',
-	MapboxAttribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
+	MapboxAttribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+	getAirports: 'http://api.aviationstack.com/v1/airports?access_key=283154d03b07b51c5bf161f3461a59d6'
 }
 
 const DOMEvents = {

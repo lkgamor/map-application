@@ -1,72 +1,52 @@
-import {DOMStrings, DOMClasses, DOMIds, DOMElements, DOMEndpoints, DOMEvents} from '../custom/data.js';
+import {DOMStrings, DOMClasses, DOMIds, DOMElements, DOMEndpoints, DOMEvents} from './data.js';
+import {map, renderer, initMapBoxMap, initBingMap, initGoogleMap, initOpenStreetMap, persistMapTypeInIndexedDB} from './init.js'
 
 'use strict';
 
-const mapZoomLevel = 7;
-const mapCenterLatitude = 7.9465;
-const mapCenterLongitude = -1.0232;
+const MARKER_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/airport.svg`, iconSize: [28, 40]});
 
-const BING_TILE_LAYER = L.tileLayer.bing({
-    bingMapsKey: BINGMAP_KEY,
-    imagerySet: 'CanvasGray'
-});
+console.log(MARKER_ICON)
 
-const GOOGLE_TILE_LAYER = L.tileLayer(DOMEndpoints.GoogleTileLayer, {
-    attribution: DOMEndpoints.GoogleAttribution,
-    maxZoom: 18,
-    subdomains:['mt0','mt1','mt2','mt3']
-});
+const getApiData = () => {
+    $.ajax({
+        url: DOMEndpoints.getAirports,
+        beforeSend: ()=> {
+            NProgress.start();
+        },
+        success: (airports)=> {
+            
+            plotDataOnMap(airports.data)
+            
+        },
+        error: ()=> {
+            console.log("Error...")
+        },
+        complete: ()=> {
+            NProgress.done();
+            NProgress.remove();				
+        }
+    });
+};
 
-const MAPBOX_TILE_LAYER = L.tileLayer(`${DOMEndpoints.MapboxTileLayer}${MAPBOX_KEY}`, {
-    attribution: DOMEndpoints.MapboxAttribution,
-    maxZoom: 18,
-    id: DOMEndpoints.MapboxType,
-    tileSize: 512,
-    zoomOffset: -1,
-    accessToken: MAPBOX_KEY
-});
+const plotDataOnMap = (data) => {
 
-const OPENSTREET_TILE_LAYER = L.tileLayer(DOMEndpoints.OSMTileLayer, {
-    attribution: DOMEndpoints.OSMAttribution
-});
+    data.forEach((airport) => {
+        const AIRPORT_NAME = airport.airport_name;
+        const AIRPORT_LATITUDE = airport.latitude;
+        const AIRPORT_LONGITUDE = airport.longitude;
+        console.log(AIRPORT_NAME);
+        console.log(AIRPORT_LATITUDE);
+        console.log(AIRPORT_LONGITUDE);
+        const airport_marker = L.marker(new Array(AIRPORT_LATITUDE, AIRPORT_LONGITUDE), {icon: MARKER_ICON})
+					        	.bindPopup(AIRPORT_NAME)
+					        	.addTo(map);
+					        	
+        /*L.circle(new Array(AIRPORT_LATITUDE, AIRPORT_LONGITUDE), {radius: 200})
+        .bindPopup(AIRPORT_NAME)
+        .addTo(map);*/
+    });
+};
 
-const map = initMap();
-
-function initMap() {
-    return L.map(DOMStrings.map).setView([mapCenterLatitude, mapCenterLongitude], mapZoomLevel);
-}
-
-function setTotalWatchList() {
-    $(DOMIds.totalWatchList).text($(DOMClasses.watchListCard).length);
-}
-
-function initMapBoxMap() {
-    map.removeLayer(BING_TILE_LAYER);
-    map.removeLayer(GOOGLE_TILE_LAYER);
-    map.removeLayer(OPENSTREET_TILE_LAYER);
-    MAPBOX_TILE_LAYER.addTo(map);
-}
-
-function initOpenStreetMap() {
-    map.removeLayer(BING_TILE_LAYER);
-    map.removeLayer(GOOGLE_TILE_LAYER);
-    map.removeLayer(MAPBOX_TILE_LAYER);
-    OPENSTREET_TILE_LAYER.addTo(map);
-}
-
-function initBingMap() {
-    map.removeLayer(GOOGLE_TILE_LAYER);
-    map.removeLayer(MAPBOX_TILE_LAYER);
-    map.removeLayer(OPENSTREET_TILE_LAYER);
-    BING_TILE_LAYER.addTo(map);
-}
-
-function initGoogleMap() {
-    map.removeLayer(BING_TILE_LAYER);
-    map.removeLayer(OPENSTREET_TILE_LAYER);
-    map.removeLayer(MAPBOX_TILE_LAYER);
-    GOOGLE_TILE_LAYER.addTo(map);
-}
 
 $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
     const CARD_VALUE = $(this).val();
@@ -84,19 +64,22 @@ $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
 
 $(DOMIds.bingButton).on(DOMEvents.click, ()=> {
     initBingMap();
+    persistMapTypeInIndexedDB(`BING_TILE_LAYER`);
 });
 
 $(DOMIds.googleButton).on(DOMEvents.click, ()=> {
     initGoogleMap();
+    persistMapTypeInIndexedDB(`GOOGLE_TILE_LAYER`);
 });
 
 $(DOMIds.openstreetButton).on(DOMEvents.click, ()=> {
     initOpenStreetMap();
+    persistMapTypeInIndexedDB(`OPENSTREET_TILE_LAYER`);
 });
 
 $(DOMIds.mapboxButton).on(DOMEvents.click, ()=> {
     initMapBoxMap();
+    persistMapTypeInIndexedDB(`MAPBOX_TILE_LAYER`);
 });
 
-initOpenStreetMap();
-setTotalWatchList();
+getApiData();

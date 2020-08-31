@@ -1,3 +1,7 @@
+/**
+* @author Louis Gamor
+**/
+
 $backgroundColor: rgb(247, 252, 248);
 $primaryColor: rgb(77, 99, 95);
 $secondaryColor: rgb(87, 172, 96);
@@ -92,7 +96,8 @@ section {
         border-bottom-right-radius: 50%;
         border-bottom-left-radius: 50%;
         @include neomorph-inset();
-
+        background: yellowgreen !important;
+        
         &-text {
             font-family: bungee,sans-serif;
             font-weight: 400;
@@ -271,11 +276,14 @@ section {
     position: relative;
 
     &--top {
-        top: 3rem;
-        margin-left: 5rem;
-        position: fixed;
+        top: 2rem;
+        position: absolute;
         z-index: 10000;
         display: flex;
+        left: 0;
+        right: 0;
+        width: max-content;
+        margin: auto;
 
         input {
             border: none;
@@ -304,16 +312,16 @@ section {
                 transition: $transitionDuration;
                 background: transparent;
                 font-variant: all-small-caps;
-            }
 
-            &-button:hover {          
-                background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
-            }
-
-            &-button:focus {
-                font-weight: 600;           
-                background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
-            }
+                &:hover {          
+                    background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
+                }
+    
+                &:focus {
+                    font-weight: 600;           
+                    background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
+                }
+            }            
         }
     }
 
@@ -351,14 +359,19 @@ section {
         box-shadow: 0 2px 15px rgba(0,0,0,.2);
         background: $backgroundColor;
         transition: background $transitionDuration;
-    }
 
-    &-card:hover {
-        //background: linear-gradient(-45deg, $primaryColor, $secondaryColor);
-        background: $secondaryColor;
+        &:hover {
+            //background: linear-gradient(-45deg, $primaryColor, $secondaryColor);
+            background: $secondaryColor;
+        }
     }
 
     &-card + &-card {
         margin-left: 1rem;
     }
+}
+
+.selected-map {
+    font-weight: 600;           
+    background: linear-gradient(-45deg, rgba(0,0,0,0.22), rgba(255,255,255,0.25)) !important;
 }

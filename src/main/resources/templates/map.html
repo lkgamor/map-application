@@ -27,7 +27,7 @@
 		<nav class="map__sidebar">
 			<div class="sidebar__logo">
 				<button class="logo"></button>
-				<span class="logo-text">LG-Map</span>
+				<span class="logo-text" th:text="${applicationName}"></span>
 			</div>
 
 			<aside class="sidebar__content">
@@ -206,9 +206,9 @@
 		const CONTEXT = [[@{/}]];
 		const BINGMAP_KEY = [[${bingKey}]];
 		const MAPBOX_KEY = [[${mapboxKey}]];
-		NProgress.configure({showSpinner: false});
+		const APPLICATION_NAME = [[${applicationName}]];
     </script>
-
+	<script th:src="@{/assets/js/custom/init.js}" type="module"></script>
     <script th:src="@{/assets/js/custom/map.js}" type="module"></script>
 
 	<!-- NOSCRIPT PROMPT IF JS IS DISABLED -->
