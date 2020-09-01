@@ -1,3 +1,7 @@
+/**
+* @author Louis Gamor
+**/
+
 const DOMStrings = {
 	map: 'map',
 	beforeEnd: 'beforeend',
@@ -46,4 +50,5 @@ const DOMHTTPMethods = {
 	deleteMethod : 'DELETE',
 	putMethod: 'PUT'
 }
+
 export {DOMStrings, DOMClasses, DOMIds, DOMElements, DOMEndpoints, DOMEvents, DOMHTTPMethods};

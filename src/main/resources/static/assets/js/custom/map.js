@@ -1,3 +1,7 @@
+/**
+* @author Louis Gamor
+**/
+
 import {DOMStrings, DOMClasses, DOMIds, DOMElements, DOMEndpoints, DOMEvents} from './data.js';
 import {map, renderer, initMapBoxMap, initBingMap, initGoogleMap, initOpenStreetMap, persistMapTypeInIndexedDB} from './init.js'
 
@@ -52,8 +56,21 @@ $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
     const CARD_VALUE = $(this).val();
     if(this.checked) {
         const BOTTOM_CONTAINER = document.querySelector(DOMClasses.bottomCardsContainer);
-        const CARD = `<div class="map__body-card" id="bottom-card__${CARD_VALUE}"></div>`;
-        BOTTOM_CONTAINER.insertAdjacentHTML(DOMStrings.afterBegin, CARD);
+        const CARD = `<div class="map__body-card" id="bottom-card__${CARD_VALUE}">
+                        <div class="map__body-card--left">
+                            <div class="image"><img alt="Tesla" src="/assets/images/${CARD_VALUE}.jpg"></div>
+                            <span class="hourly-rate">$35/hr</span>
+                        </div>
+                        <div class="map__body-card--right">
+                            <h5 class="name">Jimmy Madla</h5>
+                            <div class="role-duration">
+                                <span class="role">Software Engineer</span>
+                                <span class="duration">Hourly</span>
+                            </div>
+                            <div class="icon location">60 Spadina Avenue, Toronto, OS, Canada</div>
+                        </div>
+                    </div>`;
+        BOTTOM_CONTAINER.insertAdjacentHTML(DOMStrings.beforeEnd, CARD);
     } else {
         $(`#bottom-card__${CARD_VALUE}`).fadeOut();
         setTimeout(()=> {

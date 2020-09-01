@@ -23,6 +23,13 @@ section {
   height: 100vh;
 }
 
+.icon::before {
+  content: "\f3c5";
+  font-weight: 900;
+  margin-right: .3rem;
+  font-family: 'Font Awesome 5 Free';
+}
+
 .map__sidebar {
   flex: 1;
   padding: 1rem;
@@ -241,6 +248,7 @@ section {
   right: 0;
   width: max-content;
   margin: auto;
+  height: 40px;
 }
 
 .map__body--top input {
@@ -315,6 +323,7 @@ section {
 }
 
 .map__body-card {
+  display: flex;
   width: 350px;
   height: 180px;
   border-radius: 1rem;
@@ -326,6 +335,52 @@ section {
 
 .map__body-card:hover {
   background: #57ac60;
+  color: #f7fcf8;
+}
+
+.map__body-card:hover .duration {
+  background: #f7fcf8;
+  color: #57ac60;
+}
+
+.map__body-card--left {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 1rem .5rem;
+}
+
+.map__body-card--left .image {
+  height: 100px;
+}
+
+.map__body-card--left img {
+  height: inherit;
+  border-radius: 50%;
+}
+
+.map__body-card--left .hourly-rate {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.map__body-card--right {
+  display: flex;
+  flex: 3;
+  align-items: start;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 1rem .5rem;
+  white-space: normal;
+}
+
+.map__body-card--right .duration {
+  background: #57ac60;
+  color: #f7fcf8;
+  border-radius: 2rem;
+  padding: .2rem 1rem;
 }
 
 .map__body-card + .map__body-card {

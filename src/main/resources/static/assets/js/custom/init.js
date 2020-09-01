@@ -1,3 +1,7 @@
+/**
+* @author Louis Gamor
+**/
+
 import {DOMStrings, DOMClasses, DOMIds, DOMEndpoints} from './data.js';
 
 'use strict';
@@ -162,10 +166,10 @@ const initMapIndexedDB = () => {
 		}
 		
 		mapDBRequest.onerror = event => {
-			//console.log(`%cTRACKU: Error opening database... ${event.target.errorCode}`, DOMStrings.failureLogs);
+
 		}
 	} else {
-		//console.log(`%cTRACKU: Browser does not support indexedDB...`, DOMStrings.failureLogs);
+
 	}
 };
 
@@ -209,11 +213,11 @@ const getPreferencesFromIndexedDB = () => {
 		}
 		
 		request.onerror = event => {
-			//console.log(`%cTRACKU: Preferences could not be fetched from IndexedDB... `, DOMStrings.failureLogs);
+            console.log(`error -> ${event}`)
 		}
 		
 	} else {
-		//console.log(`%cTRACKU: IndexedDB in unavailable... `, DOMStrings.failureLogs);
+        console.log(`IndexedDB not initialized`)
 	}
 };
 
@@ -227,12 +231,12 @@ const persistMapTypeInIndexedDB = (mapType) => {
 	const transactionRequest = mapIndexedDB.transaction(`${DATABASE_STORE_PREFERENCES}`, `readwrite`).objectStore(`${DATABASE_STORE_PREFERENCES}`);	
 	let saveRequest = transactionRequest.put(mapType, 'MAP_PREFERENCE');
 	saveRequest.onsuccess = ()=> {
-		//console.log(`%cTRACKU: Preference saved to IndexedDB... `, DOMStrings.successLogs);
-	};
+
+    };
 	
 	saveRequest.onerror = ()=> {
-		//console.log(`%cTRACKU: Preference not saved to IndexedDB... `, DOMStrings.failureLogs);
-	};
+
+    };
 };
 
 (()=> {

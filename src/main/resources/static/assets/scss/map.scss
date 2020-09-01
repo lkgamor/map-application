@@ -20,6 +20,13 @@ $transitionDuration: 400ms;
     justify-content: center;
 }
 
+@mixin flex-bottom-card($weight, $position) {
+    display: flex;
+    flex: $weight;
+    align-items: $position;
+    flex-direction: column;
+}
+
 @mixin neomorph-button {
     cursor: pointer;    
     outline: none !important;
@@ -76,6 +83,13 @@ body {
 section {
     display: flex;
     height: 100vh;
+}
+
+.icon::before {
+    content: "\f3c5";
+    font-weight: 900;
+    margin-right: .3rem;
+    font-family: 'Font Awesome 5 Free';
 }
 
 .map__sidebar {        
@@ -284,6 +298,7 @@ section {
         right: 0;
         width: max-content;
         margin: auto;
+        height: 40px;
 
         input {
             border: none;
@@ -352,6 +367,7 @@ section {
     }
 
     &-card {
+        display: flex;
         width: $sidebarWidth;
         height: $bottomContainerHeight - 20px;
         border-radius: 1rem;
@@ -363,6 +379,48 @@ section {
         &:hover {
             //background: linear-gradient(-45deg, $primaryColor, $secondaryColor);
             background: $secondaryColor;
+            color: $backgroundColor;
+
+            & {    
+                .duration {
+                    background: $backgroundColor;
+                    color: $secondaryColor;
+                }
+            }
+        }
+
+        &--left {
+            @include flex-bottom-card(1, center);
+            justify-content: space-evenly;
+            padding: 1rem .5rem;
+
+            .image {
+                height: $bottomContainerHeight / 2;
+            }
+
+            img {
+                height: inherit;
+                border-radius: 50%;
+            }
+
+            .hourly-rate {
+                font-weight: bold;
+                font-size: 1.3rem;
+            }
+        }
+
+        &--right {
+            @include flex-bottom-card(3, start);
+            justify-content: space-evenly;
+            padding: 1rem .5rem;
+            white-space: normal;
+
+            .duration {
+                background: $secondaryColor;
+                color: $backgroundColor;
+                border-radius: 2rem;
+                padding: .2rem 1rem;
+            }
         }
     }
 
