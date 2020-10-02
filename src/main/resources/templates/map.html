@@ -13,8 +13,10 @@
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/fontawesome-free-5.5.0/css/all.min.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/bootstrap/bootstrap.min.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/leaflet/leaflet.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/leaflet/gh-fork-ribbon.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/nprogress/nprogress.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/sweetalert/sweetalert.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/prune/prune.css}">
     <link rel="stylesheet" th:href="@{/assets/css/custom/map.css}">
 	<link rel="stylesheet" href="https://use.typekit.net/eai0koz.css">
     <noscript><link rel="stylesheet" th:href="@{/assets/css/no_script.css}"></noscript>
@@ -196,11 +198,14 @@
 	<script th:src="@{/assets/js/vendor/nprogress/nprogress.js}"></script>
 	<script th:src="@{/assets/js/vendor/bootstrap/bootstrap.min.js}"></script>
     <script th:src="@{/assets/js/vendor/sweetalert/sweetalert.min.js}"></script>
+    <script th:src="@{/assets/js/vendor/centrifugal/centrifuge.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/leaflet.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/L.Icon.Pulse.js}"></script>
+    <script th:src="@{/assets/js/vendor/leaflet/leaflet.sprite.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet-geocoder.js}"></script>
     <script th:src="@{/assets/js/vendor/bing/bing-layer.js}"></script>
+	<script th:src="@{/assets/js/vendor/prune/prune.js}"></script>
     
     <script th:inline="javascript">
 		const CONTEXT = [[@{/}]];
@@ -210,7 +215,7 @@
     </script>
 	<script th:src="@{/assets/js/custom/init.js}" type="module"></script>
     <script th:src="@{/assets/js/custom/map.js}" type="module"></script>
-
+	
 	<!-- NOSCRIPT PROMPT IF JS IS DISABLED -->
 	<noscript>
 		<div id="noscript">

@@ -14,7 +14,6 @@ const mapZoomLevel = 7;
 const mapCenterLatitude = 7.9465;
 const mapCenterLongitude = -1.0232;
 const map = initMap();
-const renderer = L.canvas({ padding: 0.5 });
 
 const DATABASE_VERSION = 1;
 const DATABASE_NAME = `${APPLICATION_NAME}_DB`;
@@ -41,6 +40,8 @@ const MAPBOX_TILE_LAYER = L.tileLayer(`${DOMEndpoints.MapboxTileLayer}${MAPBOX_K
 });
 
 const OPENSTREET_TILE_LAYER = L.tileLayer(DOMEndpoints.OSMTileLayer, {
+    detectRetina: true,
+    maxNativeZoom: 18,
     attribution: DOMEndpoints.OSMAttribution
 });
 
@@ -49,7 +50,7 @@ const OPENSTREET_TILE_LAYER = L.tileLayer(DOMEndpoints.OSMTileLayer, {
  * -------------------------------
  */
 function initMap() {
-    return L.map(DOMStrings.map, {renderer: L.canvas()}).setView([mapCenterLatitude, mapCenterLongitude], mapZoomLevel);
+    return L.map(DOMStrings.map).setView([mapCenterLatitude, mapCenterLongitude], mapZoomLevel);
 };
 
 /**
@@ -244,4 +245,4 @@ const persistMapTypeInIndexedDB = (mapType) => {
     setTotalWatchList();
 })();
 
-export {map, renderer, mapZoomLevel, mapCenterLatitude, mapCenterLongitude, persistMapTypeInIndexedDB, initMapBoxMap, initBingMap, initGoogleMap, initOpenStreetMap, BING_TILE_LAYER, GOOGLE_TILE_LAYER, MAPBOX_TILE_LAYER, OPENSTREET_TILE_LAYER};
+export {map, mapZoomLevel, mapCenterLatitude, mapCenterLongitude, persistMapTypeInIndexedDB, initMapBoxMap, initBingMap, initGoogleMap, initOpenStreetMap, BING_TILE_LAYER, GOOGLE_TILE_LAYER, MAPBOX_TILE_LAYER, OPENSTREET_TILE_LAYER};

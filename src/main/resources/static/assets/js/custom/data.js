@@ -5,7 +5,14 @@
 const DOMStrings = {
 	map: 'map',
 	beforeEnd: 'beforeend',
-	afterBegin: 'afterbegin'
+	afterBegin: 'afterbegin',
+	notAvailable: 'N/A',
+	CATEGORY_GENERATOR_FAULTY: 'faulty_generators',
+	CATEGORY_GENERATOR_INACTIVE: 'inactive_generators',
+	CATEGORY_GENERATOR_ACTIVE: 'active_generators',
+	CATEGORY_VEHICLE_FAULTY: 'faulty_vehicles',
+	CATEGORY_VEHICLE_STOPPED: 'stopped_vehicles',
+	CATEGORY_VEHICLE_MOVING: 'moving_vehicles',
 }
 
 const DOMClasses = {

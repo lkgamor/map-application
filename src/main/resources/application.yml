@@ -1,3 +1,5 @@
+server:
+  port: 1000
 spring:
   application:
     name: LG-Map
