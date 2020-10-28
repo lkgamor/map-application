@@ -17,3 +17,7 @@ div#size, a#delete {
 	border-radius: 4px;
 	z-index: 500;
 }
+
+.rotate90 {
+	transform: rotateZ(90deg);
+}

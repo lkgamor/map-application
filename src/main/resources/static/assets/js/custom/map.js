@@ -8,26 +8,30 @@ import {map, initMapBoxMap, initBingMap, initGoogleMap, initOpenStreetMap, persi
 'use strict';
 
 let markers = new Array();
-const leafletView = new PruneClusterForLeaflet();
-const colors = ['#ff4b00', '#bac900', '#EC1813', '#55BCBE', '#D2204C', '#FF0000', '#ada59a', '#3e647e']
-const VEHICLE_MOVING_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42]});
-const VEHICLE_STOPPED_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42]});
-const VEHICLE_FAULTY_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42]});
-const GENERATOR_ACTIVE_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [25, 30]});
-const GENERATOR_INACTIVE_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [25, 30]});
-const GENERATOR_FAULTY_ICON = L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [25, 30]});
+let trackuPruneCluster = new PruneClusterForLeaflet();
+
+const pi2 = Math.PI * 2;
+const colors = ['#ff4b00', '#bac900', '#1f3549', '#e1141e', '#ADA59A', '#ada59a', '#3e647e'];
+
+trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
+    let e = new L.Icon.MarkerCluster();
+
+    e.stats = cluster.stats;
+    e.population = cluster.population;
+    return e;
+};
 
 L.Icon.MarkerCluster = L.Icon.extend({
     options: {
         iconSize: new L.Point(44, 44),
-        className: 'prunecluster leaflet-markercluster-icon'
+        className: 'prunecluster leaflet-markercluster-icon tracku__vehicle-marker'
     },
 
     createIcon: function () {
         // based on L.Icon.Canvas from shramov/leaflet-plugins (BSD licence)
-        var e = document.createElement('canvas');
+        let e = document.createElement('canvas');
         this._setIconStyles(e, 'icon');
-        var s = this.options.iconSize;
+        let s = this.options.iconSize;
         e.width = s.x;
         e.height = s.y;
         this.draw(e.getContext('2d'), s.x, s.y);
@@ -40,44 +44,41 @@ L.Icon.MarkerCluster = L.Icon.extend({
 
     draw: function(canvas, width, height) {
 
-        var lol = 0;
+        let start = 0;
+        for (let i = 0, l = colors.length; i < l; ++i) {
 
-        var start = 0;
-        for (var i = 0, l = colors.length; i < l; ++i) {
-
-            var size = this.stats[i] / this.population;
-
+            let size = this.stats[i] / this.population;
 
             if (size > 0) {
                 canvas.beginPath();
                 canvas.moveTo(22, 22);
                 canvas.fillStyle = colors[i];
-                var from = start + 0.14,
-                    to = start + size * pi2;
+
+                let from = start + 0.14;
+                let to = start + size * pi2;
 
                 if (to < from) {
                     from = start;
                 }
                 canvas.arc(22,22,22, from, to);
 
-                start = start + size*pi2;
+                start = start + size * pi2;
                 canvas.lineTo(22,22);
                 canvas.fill();
                 canvas.closePath();
             }
-
         }
 
         canvas.beginPath();
-        canvas.fillStyle = 'white';
+        canvas.fillStyle = '#f7fcf8';
         canvas.arc(22, 22, 18, 0, Math.PI*2);
         canvas.fill();
         canvas.closePath();
 
-        canvas.fillStyle = '#555';
+        canvas.fillStyle = '#1f3549';
         canvas.textAlign = 'center';
         canvas.textBaseline = 'middle';
-        canvas.font = 'bold 12px sans-serif';
+        canvas.font = 'bold 13px sans-serif';
 
         canvas.fillText(this.population, 22, 22, 40);
     }
@@ -100,33 +101,143 @@ const establishCentrifugoConnection = () => {
 establishCentrifugoConnection();
 
 
-const plotDataOnMap = (data) => {
+const plotDataOnMap = (vehicle) => {
     
-    /** Initialise all required vehicle data from {feature} response */
-	const {latitude: VEHICLE_LATITUDE, longitude: VEHICLE_LONGITUDE, name: VEHICLE_NAME, typeName: VEHICLE_TYPE, presentSpeed: VEHICLE_SPEED, licensePlate: VEHICLE_PLATE, eventTime: VEHICLE_EVENT_TIME, fleet: VEHICLE_FLEET = DOMStrings.notAvailable, model: VEHICLE_MODEL = DOMStrings.notAvailable, statusCode: VEHICLE_STATUS = DOMStrings.notAvailable} = data;
-    const VEHICLE_DATA = setVehicleMarkerIcon(VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED);
-    const marker = new PruneCluster.Marker(VEHICLE_LATITUDE, VEHICLE_LONGITUDE, {
-        popup: `<div class="d-flex flex-column">
+    /** Initialise all required vehicle data from {vehicle} response */
+	const {vehicleId: VEHICLE_ID, latitude: VEHICLE_LATITUDE, longitude: VEHICLE_LONGITUDE, name: VEHICLE_NAME, typeName: VEHICLE_TYPE, presentSpeed: VEHICLE_SPEED, presentHeading: VEHICLE_HEADING, licensePlate: VEHICLE_PLATE, eventTime: VEHICLE_EVENT_TIME, fleetName: VEHICLE_FLEET = DOMStrings.notAvailable, model: VEHICLE_MODEL = DOMStrings.notAvailable, statusCodeDescription: VEHICLE_STATUS = DOMStrings.notAvailable} = vehicle;    
+    
+    /** Check if Vehicle Already Exists On Map */
+    const markerAlreadyExists = checkIfMarkerExists(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);
+
+    /** Get Vehicle Icon, Category & Weight */
+    const VEHICLE_DATA = setVehicleMarkerIcon(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED, VEHICLE_HEADING);
+
+    const MARKER_POPUP = createMarkerPopup(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
+
+    switch (markerAlreadyExists) {
+        case true:
+            const existingMarker = getExistingMaker(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);     
+            switch (validCoordinates(existingMarker.position.lat, existingMarker.position.lng)) {
+                case true:
+                    const markerId = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
+                    console.log(markerId)
+                    if ($(`.${markerId}`)[0]) {
+                        console.log($(`.${markerId}`)[0].classList.value.includes(`${markerId}`))                        
+                    }
+                    //console.log(existingMarker)
+                    existingMarker.data.rotationAngle = VEHICLE_HEADING,
+                    existingMarker.data.rotationOrigin = 'center',
+                    existingMarker.data.popup = MARKER_POPUP;
+                    existingMarker.data.icon = VEHICLE_DATA.icon;
+                    existingMarker.weight = VEHICLE_DATA.weight;
+                    existingMarker.category = VEHICLE_DATA.category;
+                    existingMarker.position.lat = VEHICLE_LATITUDE;
+                    existingMarker.position.lng = VEHICLE_LONGITUDE;
+                    trackuPruneCluster.ProcessView();
+                break;
+            }
+        break;
+
+        case false:
+            switch (validCoordinates(VEHICLE_LATITUDE, VEHICLE_LONGITUDE)) {
+                case true:                                        
+                    
+                    const marker = new PruneCluster.Marker(VEHICLE_LATITUDE, VEHICLE_LONGITUDE, {
+                        rotationAngle: VEHICLE_HEADING,
+                        rotationOrigin: 'center',
+                        popup: MARKER_POPUP,
+                        icon: VEHICLE_DATA.icon
+                    });
+                    
+                    marker.data.forceIconRedraw = true;
+                    marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
+                    marker.category = VEHICLE_DATA.category;
+                    marker.weight = VEHICLE_DATA.weight;
+                    markers.push(marker);
+                    trackuPruneCluster.RegisterMarker(marker);
+                break;
+            }
+        break;
+    
+        default:
+            //Do something to yourself if ${markerAlreadyExists} does not return a Boolean
+        break;
+    }
+};
+
+
+/**
+ * FUNCTION TO BUILD THE POPUP WINDOW OF A VEHICLE-MARKER
+ * ------------------------------------------------------
+ * @param {String} vehicleName
+ * @param {String} vehiclePlate
+ * @param {String} vehicleModel
+ * @param {String} vehicleStatus
+ * @param {String} vehicleFleet
+ * @param {String} vehicleEventTime
+ */
+const createMarkerPopup = (vehicleName, vehiclePlate, vehicleModel, vehicleStatus, vehicleFleet, vehicleEventTime) => {
+    return `<div class="d-flex flex-column">
                 <div class="h6 font-weight-bold ml-2 d-flex justify-content-between">
-                    <span class="app-font-color">${VEHICLE_NAME}</span>
-                    <span class="vehicle-moving-status bg-secondary">${VEHICLE_PLATE}</span>
+                    <span class="app-font-color">${vehicleName}</span>
+                    <span class="vehicle-moving-status bg-secondary">${vehiclePlate}</span>
                 </div>
                 <div class="app-font-color border-secondary">
-                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${VEHICLE_MODEL}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${VEHICLE_STATUS}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${VEHICLE_FLEET}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(VEHICLE_EVENT_TIME)}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(VEHICLE_EVENT_TIME)}</em></span><br>
-                </div>`,
-        icon: VEHICLE_DATA.icon
-    });
-    marker.data.forceIconRedraw = true;
-    marker.category = VEHICLE_DATA.category;
+                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${vehicleModel}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${vehicleStatus}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${vehicleFleet}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(vehicleEventTime)}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(vehicleEventTime)}</em></span><br>
+                </div>
+            </div>`;
+};
 
-    console.log(marker)
-    markers.push(marker);
-    leafletView.RegisterMarker(marker);
-    leafletView.ProcessView();
+
+/**
+ * FUNCTION TO CHECK IF A VEHICLE-MARKER EXISTS IN MARKER ARRAY
+ * ------------------------------------------------------------
+ * @param {String} vehicleId
+ */
+const checkIfMarkerExists = vehicleId => {
+    let exists = false;
+    for(const existingMarker of markers) {
+        if (existingMarker.data.id === vehicleId) {
+            exists = true;
+        }
+    }
+    return exists;
+};
+
+
+/**
+ * FUNCTION TO RETRIEVE AN EXISTING VEHICLE-MARKER FROM MARKER ARRAY
+ * -----------------------------------------------------------------
+ * @param {String} vehicleId
+ */
+const getExistingMaker = vehicleId => {
+    let markerObject = new Object();
+    for(const existingMarker of markers) {
+        if (existingMarker.data.id === vehicleId) {
+            markerObject = existingMarker;
+        }
+    }    
+    return markerObject;
+};
+
+/**
+ * FUNCTION TO CHECK IF COORDINATES PASSED ARE VALID.
+ * -------------------------------------------------
+ * @param latitude 
+ * @param longitude
+ * @return Boolean
+ */
+const validCoordinates = (latitude, longitude) => {
+	if (latitude !== DOMStrings.notAvailable && longitude !== DOMStrings.notAvailable) {
+		if (latitude && longitude) {
+			return true;
+		}
+	} 
+	return false;
 };
 
 
@@ -134,44 +245,52 @@ const plotDataOnMap = (data) => {
  * FUNCTION TO DETERMINE VEHICLE ICON 
  * ----------------------------------
  * 
+ * @param {String} vehicleId
  * @param {String} vehicleType
  * @param {String} vehicleEventTime
  * @param {String} vehicleSpeed
+ * @param {String} vehicleHeading
  * @return {L.icon} leaflet icon
  */
-let setVehicleMarkerIcon = (vehicleType, vehicleEventTime, vehicleSpeed) => {
+let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpeed, vehicleHeading) => {
 	if (vehicleType.toLowerCase().includes(`generator`)) {				
         if(vehicleUpdateDelayed(vehicleEventTime)) {
             return {
-                'category': DOMStrings.CATEGORY_GENERATOR_FAULTY,
-                'icon': GENERATOR_FAULTY_ICON
+                'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
+                'category': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
-                    'category': DOMStrings.CATEGORY_GENERATOR_INACTIVE,
-                    'icon': GENERATOR_INACTIVE_ICON
+                    'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
+                    'category': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
                 }
             return {
-                'category': DOMStrings.CATEGORY_GENERATOR_ACTIVE,
-                'icon': GENERATOR_ACTIVE_ICON
+                'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
+                'category': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
             }
         }							
     } else {
         if(vehicleUpdateDelayed(vehicleEventTime)) {
             return {
-                'category': DOMStrings.CATEGORY_VEHICLE_FAULTY,
-                'icon': VEHICLE_FAULTY_ICON
+                'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
+                'category': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
-                    'category': DOMStrings.CATEGORY_VEHICLE_STOPPED,
-                    'icon': VEHICLE_STOPPED_ICON
+                    'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
+                    'category': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
                 }
             return {
-                'category': DOMStrings.CATEGORY_VEHICLE_MOVING,
-                'icon': VEHICLE_MOVING_ICON
+                'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
+                'category': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
             }
         }
     }
@@ -283,9 +402,27 @@ let getUpdatesDuration = (eventTime) => {
 	return `${months} ${days} ${hours} ${mins} ${secs} ago`;
 };
 
+map.addLayer(trackuPruneCluster);
 
-map.addLayer(leafletView);
+$(DOMIds.bingButton).on(DOMEvents.click, ()=> {
+    initBingMap();
+    persistMapTypeInIndexedDB(`BING_TILE_LAYER`);
+});
 
+$(DOMIds.googleButton).on(DOMEvents.click, ()=> {
+    initGoogleMap();
+    persistMapTypeInIndexedDB(`GOOGLE_TILE_LAYER`);
+});
+
+$(DOMIds.openstreetButton).on(DOMEvents.click, ()=> {
+    initOpenStreetMap();
+    persistMapTypeInIndexedDB(`OPENSTREET_TILE_LAYER`);
+});
+
+$(DOMIds.mapboxButton).on(DOMEvents.click, ()=> {
+    initMapBoxMap();
+    persistMapTypeInIndexedDB(`MAPBOX_TILE_LAYER`);
+});
 
 $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
     const CARD_VALUE = $(this).val();
@@ -314,29 +451,9 @@ $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
     }
 });
 
-$(DOMIds.bingButton).on(DOMEvents.click, ()=> {
-    initBingMap();
-    persistMapTypeInIndexedDB(`BING_TILE_LAYER`);
-});
-
-$(DOMIds.googleButton).on(DOMEvents.click, ()=> {
-    initGoogleMap();
-    persistMapTypeInIndexedDB(`GOOGLE_TILE_LAYER`);
-});
-
-$(DOMIds.openstreetButton).on(DOMEvents.click, ()=> {
-    initOpenStreetMap();
-    persistMapTypeInIndexedDB(`OPENSTREET_TILE_LAYER`);
-});
-
-$(DOMIds.mapboxButton).on(DOMEvents.click, ()=> {
-    initMapBoxMap();
-    persistMapTypeInIndexedDB(`MAPBOX_TILE_LAYER`);
-});
-
 
 /*
-leafletView.PrepareLeafletMarker  = function(leafletMarker, data) {
+trackuPruneCluster.PrepareLeafletMarker  = function(leafletMarker, data) {
     leafletMarker.setIcon(
         L.icon({
             iconUrl: data.iconUrl,

@@ -7,12 +7,13 @@ const DOMStrings = {
 	beforeEnd: 'beforeend',
 	afterBegin: 'afterbegin',
 	notAvailable: 'N/A',
-	CATEGORY_GENERATOR_FAULTY: 'faulty_generators',
-	CATEGORY_GENERATOR_INACTIVE: 'inactive_generators',
-	CATEGORY_GENERATOR_ACTIVE: 'active_generators',
-	CATEGORY_VEHICLE_FAULTY: 'faulty_vehicles',
-	CATEGORY_VEHICLE_STOPPED: 'stopped_vehicles',
-	CATEGORY_VEHICLE_MOVING: 'moving_vehicles',
+	customTrackUVehicleMarkerClass: 'tracku__vehicle-marker',
+	CATEGORY_GENERATOR_FAULTY: 1,
+	CATEGORY_GENERATOR_INACTIVE: 2,
+	CATEGORY_GENERATOR_ACTIVE: 3,
+	CATEGORY_VEHICLE_FAULTY: 1,
+	CATEGORY_VEHICLE_STOPPED: 2,
+	CATEGORY_VEHICLE_MOVING: 3,
 }
 
 const DOMClasses = {

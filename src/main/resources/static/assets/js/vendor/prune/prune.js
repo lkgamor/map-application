@@ -530,6 +530,12 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
                 marker.bindPopup(content, data.popupOptions);
             }
         }
+        if (data.rotationAngle) {
+            marker.setRotationAngle(data.rotationAngle);
+        }
+        if (data.rotationOrigin) {
+            marker.setRotationOrigin(data.rotationOrigin);
+        }
     },
     onAdd: function (map) {
         this._map = map;
