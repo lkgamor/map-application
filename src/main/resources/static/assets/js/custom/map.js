@@ -11,20 +11,12 @@ let markers = new Array();
 let trackuPruneCluster = new PruneClusterForLeaflet();
 
 const pi2 = Math.PI * 2;
-const colors = ['#ff4b00', '#bac900', '#1f3549', '#e1141e', '#ADA59A', '#ada59a', '#3e647e'];
-
-trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
-    let e = new L.Icon.MarkerCluster();
-
-    e.stats = cluster.stats;
-    e.population = cluster.population;
-    return e;
-};
+const colors = ['#ff4b00', '#bac900', '#858584', '#1f3549', '#7d1e13', '#ada59a', '#ada59a', '#3e647e'];
 
 L.Icon.MarkerCluster = L.Icon.extend({
     options: {
         iconSize: new L.Point(44, 44),
-        className: 'prunecluster leaflet-markercluster-icon tracku__vehicle-marker'
+        className: `prunecluster leaflet-markercluster-icon ${DOMStrings.customTrackUVehicleMarkerClass}`
     },
 
     createIcon: function () {
@@ -84,14 +76,29 @@ L.Icon.MarkerCluster = L.Icon.extend({
     }
 });
 
+trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
+    let e = new L.Icon.MarkerCluster();
+
+    e.stats = cluster.stats;
+    e.population = cluster.population;
+    return e;
+};
+
+// trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data) {
+   
+//     vehicleMarker.on('click', function(){
+//         console.log(`clicked on = ${data.id}`)
+//     });
+
+// };
 
 const establishCentrifugoConnection = () => {
     //SET CENTRIFUGO CONNECTION INSTANCE
-    const CENTRIFUGE = new Centrifuge(`wss://tracku.supercloud.com.gh/connection/websocket`);
+    const CENTRIFUGE = new Centrifuge(DOMStrings.centrifugoWebsocketUrl);
     //ADD HS256 ACCESS TOKEN FOR AUTHENTICATION
-    CENTRIFUGE.setToken(`eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJUUkFDS1UtVjMiLCJhdWQiOiJDZW50cmlmdWdvIiwiaWF0IjoxNjAxNjUyNTI0LCJleHAiOjE2MDQzMzA5MjQsInN1YiI6IjRkYzYxODBhLTNhZDItNDcyMy1iNzJiLWFiYmY0NTMwMTAzYyJ9.2ZDHXLxL_LXQE7ejoZL7fxZFNCnm1QBSRVrquNg1OUo`);
+    CENTRIFUGE.setToken(DOMStrings.centrifugoToken);
     //SUBSCRIBE TO CHANNEL FOR RECEIVING PUBLISHED VEHICLES
-    CENTRIFUGE.subscribe(`TrackU-Prod-V3`, (message)=> {
+    CENTRIFUGE.subscribe(DOMStrings.centrifugoChannel, (message)=> {
         //console.log(message.data);
         plotDataOnMap(message.data);
     });
@@ -121,24 +128,24 @@ const plotDataOnMap = (vehicle) => {
             switch (validCoordinates(existingMarker.position.lat, existingMarker.position.lng)) {
                 case true:
                     const markerId = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
-                    console.log(markerId)
-                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
-                    existingMarker.data.rotationOrigin = 'center';
-                    existingMarker.data.popup = MARKER_POPUP;
-                    existingMarker.data.icon = VEHICLE_DATA.icon;
                     existingMarker.weight = VEHICLE_DATA.weight;
                     existingMarker.category = VEHICLE_DATA.category;
                     existingMarker.position.lat = VEHICLE_LATITUDE;
                     existingMarker.position.lng = VEHICLE_LONGITUDE;
+                    existingMarker.data.popup = MARKER_POPUP;
+                    existingMarker.data.icon = VEHICLE_DATA.icon;
+                    existingMarker.data.rotationOrigin = 'center';
+                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
+                    //console.log(existingMarker)
                     trackuPruneCluster.ProcessView();
                 break;
                 case false:
-                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
-                    existingMarker.data.rotationOrigin = 'center';
-                    existingMarker.data.popup = MARKER_POPUP;
-                    existingMarker.data.icon = VEHICLE_DATA.icon;
                     existingMarker.weight = VEHICLE_DATA.weight;
                     existingMarker.category = VEHICLE_DATA.category;
+                    existingMarker.data.popup = MARKER_POPUP;
+                    existingMarker.data.icon = VEHICLE_DATA.icon;
+                    existingMarker.data.rotationOrigin = 'center';
+                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
                     trackuPruneCluster.ProcessView();
                 break;
             }
@@ -264,40 +271,40 @@ let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpe
 	if (vehicleType.toLowerCase().includes(`generator`)) {				
         if(vehicleUpdateDelayed(vehicleEventTime)) {
             return {
-                'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
-                'category': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
+                'category': parseInt(DOMStrings.CATEGORY_FAULTY),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
-                    'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
-                    'category': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                    'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
+                    'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
                 }
             return {
-                'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
-                'category': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
+                'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         }							
     } else {
         if(vehicleUpdateDelayed(vehicleEventTime)) {
             return {
-                'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
-                'category': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
+                'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
+                'category': parseInt(DOMStrings.CATEGORY_FAULTY),
                 'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
-                    'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
-                    'category': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
+                    'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
+                    'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
                     'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
                 }
             return {
-                'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
-                'category': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
+                'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
+                'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
                 'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         }

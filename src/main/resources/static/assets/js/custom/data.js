@@ -8,12 +8,12 @@ const DOMStrings = {
 	afterBegin: 'afterbegin',
 	notAvailable: 'N/A',
 	customTrackUVehicleMarkerClass: 'tracku__vehicle-marker',
-	CATEGORY_GENERATOR_FAULTY: 1,
-	CATEGORY_GENERATOR_INACTIVE: 2,
-	CATEGORY_GENERATOR_ACTIVE: 3,
-	CATEGORY_VEHICLE_FAULTY: 1,
-	CATEGORY_VEHICLE_STOPPED: 2,
-	CATEGORY_VEHICLE_MOVING: 3,
+	centrifugoWebsocketUrl: 'wss://tracku.supercloud.com.gh/connection/websocket',
+	centrifugoToken: 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJUUkFDS1UtVjMiLCJhdWQiOiJDZW50cmlmdWdvIiwiaWF0IjoxNjAxNjUyNTI0LCJleHAiOjE2MDQzMzA5MjQsInN1YiI6IjRkYzYxODBhLTNhZDItNDcyMy1iNzJiLWFiYmY0NTMwMTAzYyJ9.2ZDHXLxL_LXQE7ejoZL7fxZFNCnm1QBSRVrquNg1OUo',
+	centrifugoChannel: 'TrackU-Prod-V3',
+	CATEGORY_FAULTY: 1,
+	CATEGORY_INACTIVE: 2,
+	CATEGORY_ACTIVE: 3,
 }
 
 const DOMClasses = {
