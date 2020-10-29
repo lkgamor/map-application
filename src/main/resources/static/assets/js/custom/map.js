@@ -87,9 +87,9 @@ L.Icon.MarkerCluster = L.Icon.extend({
 
 const establishCentrifugoConnection = () => {
     //SET CENTRIFUGO CONNECTION INSTANCE
-    const CENTRIFUGE = new Centrifuge(``);
+    const CENTRIFUGE = new Centrifuge(`wss://tracku.supercloud.com.gh/connection/websocket`);
     //ADD HS256 ACCESS TOKEN FOR AUTHENTICATION
-    CENTRIFUGE.setToken(``);
+    CENTRIFUGE.setToken(`eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJUUkFDS1UtVjMiLCJhdWQiOiJDZW50cmlmdWdvIiwiaWF0IjoxNjAxNjUyNTI0LCJleHAiOjE2MDQzMzA5MjQsInN1YiI6IjRkYzYxODBhLTNhZDItNDcyMy1iNzJiLWFiYmY0NTMwMTAzYyJ9.2ZDHXLxL_LXQE7ejoZL7fxZFNCnm1QBSRVrquNg1OUo`);
     //SUBSCRIBE TO CHANNEL FOR RECEIVING PUBLISHED VEHICLES
     CENTRIFUGE.subscribe(`TrackU-Prod-V3`, (message)=> {
         //console.log(message.data);
@@ -112,6 +112,7 @@ const plotDataOnMap = (vehicle) => {
     /** Get Vehicle Icon, Category & Weight */
     const VEHICLE_DATA = setVehicleMarkerIcon(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED, VEHICLE_HEADING);
 
+    /** Build Vehicle Popup Content */
     const MARKER_POPUP = createMarkerPopup(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
 
     switch (markerAlreadyExists) {
@@ -121,12 +122,8 @@ const plotDataOnMap = (vehicle) => {
                 case true:
                     const markerId = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
                     console.log(markerId)
-                    if ($(`.${markerId}`)[0]) {
-                        console.log($(`.${markerId}`)[0].classList.value.includes(`${markerId}`))                        
-                    }
-                    //console.log(existingMarker)
-                    existingMarker.data.rotationAngle = VEHICLE_HEADING,
-                    existingMarker.data.rotationOrigin = 'center',
+                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
+                    existingMarker.data.rotationOrigin = 'center';
                     existingMarker.data.popup = MARKER_POPUP;
                     existingMarker.data.icon = VEHICLE_DATA.icon;
                     existingMarker.weight = VEHICLE_DATA.weight;
@@ -135,13 +132,21 @@ const plotDataOnMap = (vehicle) => {
                     existingMarker.position.lng = VEHICLE_LONGITUDE;
                     trackuPruneCluster.ProcessView();
                 break;
+                case false:
+                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
+                    existingMarker.data.rotationOrigin = 'center';
+                    existingMarker.data.popup = MARKER_POPUP;
+                    existingMarker.data.icon = VEHICLE_DATA.icon;
+                    existingMarker.weight = VEHICLE_DATA.weight;
+                    existingMarker.category = VEHICLE_DATA.category;
+                    trackuPruneCluster.ProcessView();
+                break;
             }
         break;
 
         case false:
             switch (validCoordinates(VEHICLE_LATITUDE, VEHICLE_LONGITUDE)) {
-                case true:                                        
-                    
+                case true:       
                     const marker = new PruneCluster.Marker(VEHICLE_LATITUDE, VEHICLE_LONGITUDE, {
                         rotationAngle: VEHICLE_HEADING,
                         rotationOrigin: 'center',
@@ -155,6 +160,9 @@ const plotDataOnMap = (vehicle) => {
                     marker.weight = VEHICLE_DATA.weight;
                     markers.push(marker);
                     trackuPruneCluster.RegisterMarker(marker);
+                break;
+                case false:
+                    //Vehicle has invalid coordinates
                 break;
             }
         break;
@@ -258,19 +266,19 @@ let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpe
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
                 'category': parseInt(DOMStrings.CATEGORY_GENERATOR_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
                     'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
                     'category': parseInt(DOMStrings.CATEGORY_GENERATOR_INACTIVE),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
                 }
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
                 'category': parseInt(DOMStrings.CATEGORY_GENERATOR_ACTIVE),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [28, 38], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         }							
     } else {
@@ -278,19 +286,19 @@ let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpe
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
                 'category': parseInt(DOMStrings.CATEGORY_VEHICLE_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
                     'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
                     'category': parseInt(DOMStrings.CATEGORY_VEHICLE_STOPPED),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
                 }
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
                 'category': parseInt(DOMStrings.CATEGORY_VEHICLE_MOVING),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId} tracku__rotate-marker--90`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         }
     }

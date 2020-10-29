@@ -530,6 +530,15 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
                 marker.bindPopup(content, data.popupOptions);
             }
         }
+
+        /**
+         * @author Louis K. Gamor
+         * The 2 conditions below were originally not included in this library.
+         * <p> The if(data.rotationAngle) condition verifies if the current marker has a rotationAngle passed as a parameter.
+         *      In which case the .setRotationAngle function that is native to the leaflet.rotatedMarker.js is invoked.
+         * <p> The if(data.rotationOrigin) condition verifies if the current marker has a rotationOrigin passed as a parameter.
+         *      In which case the .setRotationOrigin function that is native to the leaflet.rotatedMarker.js is invoked.
+         */
         if (data.rotationAngle) {
             marker.setRotationAngle(data.rotationAngle);
         }
