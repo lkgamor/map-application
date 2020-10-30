@@ -513,10 +513,6 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
         return m;
     },
     PrepareLeafletMarker: function (marker, data, category) {
-        
-        // Ensure marker keeps rotated during dragging
-        //marker.on('drag', function(e) { e.target._applyRotation(); });
-
         if (data.icon) {
             if (typeof data.icon === 'function') {
                 marker.setIcon(data.icon(data, category));
@@ -533,24 +529,6 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
             else {
                 marker.bindPopup(content, data.popupOptions);
             }
-        }
-
-        /**
-        * The 2 conditions below were originally not included in this library.
-        * They will only work if the `leaflet.rotatedMarker.js` library is included from `https://github.com/bbecquet/Leaflet.RotatedMarker`
-        * It has to be included before the `Prune.js` library in the project.
-        * 
-        * <p> The `if(data.rotationAngle)` condition verifies if the current marker has a rotationAngle passed as a parameter.
-        *      In which case the .setRotationAngle function that is native to the leaflet.rotatedMarker.js is invoked.
-        * <p> The `if(data.rotationOrigin)` condition verifies if the current marker has a rotationOrigin passed as a parameter.
-        *      In which case the .setRotationOrigin function that is native to the leaflet.rotatedMarker.js is invoked.
-        */
-        if (data.rotationAngle) {
-            marker.setRotationAngle(data.rotationAngle);
-            //marker._applyRotation;
-        }
-        if (data.rotationOrigin) {
-            marker.setRotationOrigin(data.rotationOrigin);
         }
     },
     onAdd: function (map) {
@@ -590,30 +568,6 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
         this._zoomInProgress = false;
         this.ProcessView();
     },
-    // setRotationAngle: function(angle) {
-    //     this.options.rotationAngle = angle;
-    //     this.ProcessView();
-    //     //return this;
-    // },
-    // setRotationOrigin: function(origin) {
-    //     this.options.rotationOrigin = origin;
-    //     this.ProcessView();
-    //     //return this;
-    // },
-    _applyRotation: function () {
-        if(this.options.rotationAngle) {
-            this._icon.style[L.DomUtil.TRANSFORM+'Origin'] = this.options.rotationOrigin;
-
-            if(oldIE) {
-                // for IE 9, use the 2D rotation
-                this._icon.style[L.DomUtil.TRANSFORM] = 'rotate(' + this.options.rotationAngle + 'deg)';
-            } else {
-                // for modern browsers, prefer the 3D accelerated version
-                this._icon.style[L.DomUtil.TRANSFORM] += ' rotateZ(' + this.options.rotationAngle + 'deg)';
-            }
-            this.ProcessView();
-        }
-    },
     ProcessView: function () {
         var _this = this;
         if (!this._map || this._zoomInProgress || this._moveInProgress) {
@@ -631,7 +585,6 @@ var PruneClusterForLeaflet = (L.Layer ? L.Layer : L.Class).extend({
         for (var i = 0, l = objectsOnMap.length; i < l; ++i) {
             var marker = objectsOnMap[i].data._leafletMarker;
             markersOnMap[i] = marker;
-            console.log(markersOnMap[i])
             marker._removeFromMap = true;
         }
         var clusterCreationList = [];

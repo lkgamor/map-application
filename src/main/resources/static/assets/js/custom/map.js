@@ -84,13 +84,61 @@ trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
     return e;
 };
 
-// trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data) {
-   
-//     vehicleMarker.on('click', function(){
-//         console.log(`clicked on = ${data.id}`)
-//     });
+trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category) {
+    if (data.icon) {
+        if (typeof data.icon === 'function') {
+            vehicleMarker.setIcon(data.icon(data, category));
+        }
+        else {
+            vehicleMarker.setIcon(data.icon);
+        }
+    }
+    if (data.popup) {
+        var content = typeof data.popup === 'function' ? data.popup(data, category) : data.popup;
+        if (vehicleMarker.getPopup()) {
+            vehicleMarker.setPopupContent(content, data.popupOptions);
+        }
+        else {
+            vehicleMarker.bindPopup(content, data.popupOptions);
+        }
+    }
 
-// };
+    /**
+     * @author Louis Gamor
+    * The 2 conditions below were originally not included in this library.
+    * They will only work if the `leaflet.rotatedMarker.js` library is included from `https://github.com/bbecquet/Leaflet.RotatedMarker`
+    * It has to be included before the `Prune.js` library in the project.
+    * 
+    * <p> The `if(data.rotationAngle)` condition verifies if the current marker has a rotationAngle passed as a parameter.
+    *      In which case the .setRotationAngle function that is native to the leaflet.rotatedMarker.js is invoked.
+    * <p> The `if(data.rotationOrigin)` condition verifies if the current marker has a rotationOrigin passed as a parameter.
+    *      In which case the .setRotationOrigin function that is native to the leaflet.rotatedMarker.js is invoked.
+    */
+    if (data.rotationAngle) {
+        vehicleMarker.setRotationAngle(data.rotationAngle);
+    }
+    if (data.rotationOrigin) {
+        vehicleMarker.setRotationOrigin(data.rotationOrigin);
+    }
+
+    vehicleMarker.on('click', function(event){
+        let markerClicked = false;
+        console.log(`Event = ${event}`)
+        switch (markerClicked) {
+            case false:
+                
+                console.log(`clicked on = ${data.name}`)
+                markerClicked = true;
+            break;
+        
+            default:
+                //Duplicate click event registered
+            break;
+        }
+        return;
+    });
+
+};
 
 const establishCentrifugoConnection = () => {
     //SET CENTRIFUGO CONNECTION INSTANCE
@@ -108,6 +156,11 @@ const establishCentrifugoConnection = () => {
 establishCentrifugoConnection();
 
 
+/**
+ * FUNCTION TO PLOT VEHICLE-MARKER ON MAP
+ * --------------------------------------
+ * @param {Object} vehicle
+ */
 const plotDataOnMap = (vehicle) => {
     
     /** Initialise all required vehicle data from {vehicle} response */
@@ -127,26 +180,29 @@ const plotDataOnMap = (vehicle) => {
             const existingMarker = getExistingMaker(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);     
             switch (validCoordinates(existingMarker.position.lat, existingMarker.position.lng)) {
                 case true:
-                    const markerId = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
-                    existingMarker.weight = VEHICLE_DATA.weight;
-                    existingMarker.category = VEHICLE_DATA.category;
-                    existingMarker.position.lat = VEHICLE_LATITUDE;
-                    existingMarker.position.lng = VEHICLE_LONGITUDE;
-                    existingMarker.data.popup = MARKER_POPUP;
-                    existingMarker.data.icon = VEHICLE_DATA.icon;
-                    existingMarker.data.rotationOrigin = 'center';
-                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
-                    //console.log(existingMarker)
-                    trackuPruneCluster.ProcessView();
+
+                    const updateVehiclePromise = new Promise((resolve, reject)=> {    
+                        existingMarker.position.lat = VEHICLE_LATITUDE;
+                        existingMarker.position.lng = VEHICLE_LONGITUDE;
+                        trackuPruneCluster.ProcessView();
+
+                        resolve(VEHICLE_HEADING);
+                    });
+
+                    updateVehiclePromise.then((heading)=> {
+                        if (existingMarker.data.rotationAngle !== heading) {               
+                            trackuPruneCluster.RemoveMarkers([existingMarker]);             
+                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_POPUP, VEHICLE_DATA);
+                            markers.push(updatedVehicleMarker);
+                            trackuPruneCluster.RegisterMarker(updatedVehicleMarker);
+                        }
+                    }).catch(()=> {
+
+                    });
+
                 break;
                 case false:
-                    existingMarker.weight = VEHICLE_DATA.weight;
-                    existingMarker.category = VEHICLE_DATA.category;
-                    existingMarker.data.popup = MARKER_POPUP;
-                    existingMarker.data.icon = VEHICLE_DATA.icon;
-                    existingMarker.data.rotationOrigin = 'center';
-                    existingMarker.data.rotationAngle = VEHICLE_HEADING;
-                    trackuPruneCluster.ProcessView();
+                    //Vehicle has invalid coordinates
                 break;
             }
         break;
@@ -154,19 +210,9 @@ const plotDataOnMap = (vehicle) => {
         case false:
             switch (validCoordinates(VEHICLE_LATITUDE, VEHICLE_LONGITUDE)) {
                 case true:       
-                    const marker = new PruneCluster.Marker(VEHICLE_LATITUDE, VEHICLE_LONGITUDE, {
-                        rotationAngle: VEHICLE_HEADING,
-                        rotationOrigin: 'center',
-                        popup: MARKER_POPUP,
-                        icon: VEHICLE_DATA.icon
-                    });
-                    
-                    marker.data.forceIconRedraw = true;
-                    marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`;
-                    marker.category = VEHICLE_DATA.category;
-                    marker.weight = VEHICLE_DATA.weight;
-                    markers.push(marker);
-                    trackuPruneCluster.RegisterMarker(marker);
+                    const newVehicleMarker = generateVehicleMarker(VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_POPUP, VEHICLE_DATA);
+                    markers.push(newVehicleMarker);
+                    trackuPruneCluster.RegisterMarker(newVehicleMarker);
                 break;
                 case false:
                     //Vehicle has invalid coordinates
@@ -178,6 +224,35 @@ const plotDataOnMap = (vehicle) => {
             //Do something to yourself if ${markerAlreadyExists} does not return a Boolean
         break;
     }
+};
+
+
+/**
+ * FUNCTION TO BUILD A VEHICLE-MARKER
+ * ----------------------------------
+ * @param {UUID} vehicleId
+ * @param {String} vehicleName
+ * @param {Double} vehicleLatitude
+ * @param {Double} vehicleLongitude
+ * @param {Integer} vehicleHeading
+ * @param {HTML} popupBody
+ * @param {Object} markerData
+ * @returns Object
+ */
+let generateVehicleMarker = (vehicleId, vehicleName, vehicleLatitude, vehicleLongitude, vehicleHeading, popupBody, markerData) => {
+    const marker = new PruneCluster.Marker(vehicleLatitude, vehicleLongitude, {
+        rotationAngle: vehicleHeading,
+        rotationOrigin: 'center',
+        popup: popupBody,
+        icon: markerData.icon
+    });
+
+    marker.category = markerData.category;
+    marker.weight = markerData.weight;
+    marker.data.name = vehicleName;
+    marker.data.forceIconRedraw = true;
+    marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`;
+    return marker;
 };
 
 
@@ -273,19 +348,19 @@ let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpe
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
                 'category': parseInt(DOMStrings.CATEGORY_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         } else {
             if (vehicleSpeed < 1)
                 return {
                     'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
                     'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
                 }
             return {
                 'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
                 'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [25, 35], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
             }
         }							
     } else {
@@ -465,7 +540,6 @@ $(document).on(DOMEvents.change, DOMElements.watchListCheckBox, function() {
         },500);
     }
 });
-
 
 /*
 trackuPruneCluster.PrepareLeafletMarker  = function(leafletMarker, data) {
