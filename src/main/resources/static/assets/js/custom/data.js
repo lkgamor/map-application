@@ -14,6 +14,7 @@ const DOMStrings = {
 	CATEGORY_FAULTY: 1,
 	CATEGORY_INACTIVE: 2,
 	CATEGORY_ACTIVE: 3,
+	CATEGORY_PLACE: 4,
 }
 
 const DOMClasses = {

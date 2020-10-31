@@ -11,7 +11,11 @@ let markers = new Array();
 let trackuPruneCluster = new PruneClusterForLeaflet();
 
 const pi2 = Math.PI * 2;
-const colors = ['#ff4b00', '#bac900', '#858584', '#1f3549', '#7d1e13', '#ada59a', '#ada59a', '#3e647e'];
+const FALUTY_CATEGORY_COLOR = '#7d1e13';
+const INACTIVE_CATEGORY_COLOR = '#858584';
+const ACTIVE_CATEGORY_COLOR = '#1f3549';
+const PLACES_CATEGORY_COLOR = '#bac900';
+const CLUSTER_CATEGORY_COLORS = [FALUTY_CATEGORY_COLOR, FALUTY_CATEGORY_COLOR, INACTIVE_CATEGORY_COLOR, ACTIVE_CATEGORY_COLOR, PLACES_CATEGORY_COLOR];
 
 L.Icon.MarkerCluster = L.Icon.extend({
     options: {
@@ -37,14 +41,14 @@ L.Icon.MarkerCluster = L.Icon.extend({
     draw: function(canvas, width, height) {
 
         let start = 0;
-        for (let i = 0, l = colors.length; i < l; ++i) {
+        for (let i = 0, l = CLUSTER_CATEGORY_COLORS.length; i < l; ++i) {
 
             let size = this.stats[i] / this.population;
 
             if (size > 0) {
                 canvas.beginPath();
                 canvas.moveTo(22, 22);
-                canvas.fillStyle = colors[i];
+                canvas.fillStyle = CLUSTER_CATEGORY_COLORS[i];
 
                 let from = start + 0.14;
                 let to = start + size * pi2;
@@ -85,6 +89,8 @@ trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
 };
 
 trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category) {
+    
+    const TRACKING_MODE = localStorage.getItem(DOMStrings.trackingMode);
     if (data.icon) {
         if (typeof data.icon === 'function') {
             vehicleMarker.setIcon(data.icon(data, category));
@@ -93,13 +99,19 @@ trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category
             vehicleMarker.setIcon(data.icon);
         }
     }
-    if (data.popup) {
-        var content = typeof data.popup === 'function' ? data.popup(data, category) : data.popup;
-        if (vehicleMarker.getPopup()) {
-            vehicleMarker.setPopupContent(content, data.popupOptions);
+
+    /**
+     * @author Louis Gamor
+     * Using the leaflet.tooltip UI layer instead of the default leaflet.popup UI layer built into the
+     * PrunCluster library.
+     */
+    if (data.tooltip) {
+        var content = typeof data.tooltip === 'function' ? data.tooltip(data, category) : data.tooltip;
+        if (vehicleMarker.getTooltip()) {
+            vehicleMarker.setTooltipContent(content, data.tooltipOptions);
         }
         else {
-            vehicleMarker.bindPopup(content, data.popupOptions);
+            vehicleMarker.bindTooltip(content, data.tooltipOptions);
         }
     }
 
@@ -121,22 +133,17 @@ trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category
         vehicleMarker.setRotationOrigin(data.rotationOrigin);
     }
 
-    vehicleMarker.on('click', function(event){
-        let markerClicked = false;
-        console.log(`Event = ${event}`)
-        switch (markerClicked) {
-            case false:
-                
-                console.log(`clicked on = ${data.name}`)
-                markerClicked = true;
-            break;
-        
-            default:
-                //Duplicate click event registered
-            break;
-        }
-        return;
-    });
+    if (TRACKING_MODE === `true`) {
+        //HIDE VEHICLE-MARKER WHEN IN TRACKING MODE			
+        $(DOMClasses.customTrackUVehicleMarkerClass).hide();
+    } else {
+        //ENABLE VEHICLE-MARKER CLICK EVENT ON MAP ONLY WHEN NOT IN TRACKING MODE
+        vehicleMarker.off(DOMEvents.click).on(DOMEvents.click, (event) => {           
+            console.log(`Clicked on [${data.name}] with clientId [${data.clientId}]`)
+            //showVehicleDetails(vehicleId, clientId);
+            return;
+        });
+    }
 
 };
 
@@ -148,7 +155,7 @@ const establishCentrifugoConnection = () => {
     //SUBSCRIBE TO CHANNEL FOR RECEIVING PUBLISHED VEHICLES
     CENTRIFUGE.subscribe(DOMStrings.centrifugoChannel, (message)=> {
         //console.log(message.data);
-        plotDataOnMap(message.data);
+        processDeviceForPlotting(message.data);
     });
     //ESTABLISH CONNECTION
     CENTRIFUGE.connect();
@@ -161,43 +168,87 @@ establishCentrifugoConnection();
  * --------------------------------------
  * @param {Object} vehicle
  */
-const plotDataOnMap = (vehicle) => {
+const processDeviceForPlotting = (vehicle) => {
     
     /** Initialise all required vehicle data from {vehicle} response */
-	const {vehicleId: VEHICLE_ID, latitude: VEHICLE_LATITUDE, longitude: VEHICLE_LONGITUDE, name: VEHICLE_NAME, typeName: VEHICLE_TYPE, presentSpeed: VEHICLE_SPEED, presentHeading: VEHICLE_HEADING, licensePlate: VEHICLE_PLATE, eventTime: VEHICLE_EVENT_TIME, fleetName: VEHICLE_FLEET = DOMStrings.notAvailable, model: VEHICLE_MODEL = DOMStrings.notAvailable, statusCodeDescription: VEHICLE_STATUS = DOMStrings.notAvailable} = vehicle;    
+    const {
+        vehicleId: VEHICLE_ID, 
+        name: VEHICLE_NAME, 
+        typeName: VEHICLE_TYPE, 
+        clientId: VEHICLE_CLIENT_ID, 
+        latitude: VEHICLE_LATITUDE, 
+        longitude: VEHICLE_LONGITUDE, 
+        licensePlate: VEHICLE_PLATE, 
+        presentSpeed: VEHICLE_SPEED, 
+        presentHeading: VEHICLE_HEADING, 
+        presentEventTime: VEHICLE_EVENT_TIME, 
+        fleetName: VEHICLE_FLEET = DOMStrings.notAvailable, 
+        model: VEHICLE_MODEL = DOMStrings.notAvailable, 
+        statusCodeDescription: VEHICLE_STATUS = DOMStrings.notAvailable
+    } = vehicle;    
     
     /** Check if Vehicle Already Exists On Map */
-    const markerAlreadyExists = checkIfMarkerExists(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);
+    const markerAlreadyExists = checkIfVehicleMarkerExistsOnMap(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);
 
     /** Get Vehicle Icon, Category & Weight */
-    const VEHICLE_DATA = setVehicleMarkerIcon(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED, VEHICLE_HEADING);
+    const VEHICLE_DATA = buildMarkerIconData(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED);
 
     /** Build Vehicle Popup Content */
-    const MARKER_POPUP = createMarkerPopup(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
+    const MARKER_TOOLTIP = buildMarkerTooltip(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
 
     switch (markerAlreadyExists) {
         case true:
-            const existingMarker = getExistingMaker(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);     
+            const existingMarker = getExistingVehicleMarker(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);     
             switch (validCoordinates(existingMarker.position.lat, existingMarker.position.lng)) {
                 case true:
 
-                    const updateVehiclePromise = new Promise((resolve, reject)=> {    
+                    /**
+                     * Return a promise that updates vehicle-marker tooltip and location on the map
+                     * 
+                     * <em> If this promise is resolved, return the new bearing of the vehicle.
+                     * <em> If this promise is rejected, do not return anything.
+                     * 
+                     * The importance of this logic is to limit how often a vehicle-marker is removed from the map. 
+                     */
+                    const updateVehiclePromise = new Promise((resolve, reject)=> {
+                        existingMarker.data.tooltip = MARKER_TOOLTIP;
                         existingMarker.position.lat = VEHICLE_LATITUDE;
-                        existingMarker.position.lng = VEHICLE_LONGITUDE;
+                        existingMarker.position.lng = VEHICLE_LONGITUDE;                        
+                        existingMarker.category = VEHICLE_DATA.category;
+                        existingMarker.weight = VEHICLE_DATA.weight;
+                        existingMarker.data.name = VEHICLE_NAME;
+                        existingMarker.data.clientId = VEHICLE_CLIENT_ID;
                         trackuPruneCluster.ProcessView();
 
                         resolve(VEHICLE_HEADING);
                     });
 
+                    /**
+                     * If this promise is resolved, return the new bearing of the vehicle:
+                     * 
+                     * <em> If this new bearing is similar to the previous bearing of the vehicle (i.e vehicle has not changed its direction), 
+                     *      DO NOTHING.
+                     * <em> However if the new bearing is different from the previous bearing (i.e vehicle has changed its direction)
+                     *      REMOVE VEHICLE-MARKER FROM MAP AND PLOT A NEW ONE USING THE NEW BEARING.
+                     * 
+                     * If this promise is rejected:
+                     *      REMOVE VEHICLE-MARKER FROM MAP ANYWAY, AND PLOT A NEW ONE USING THE NEW BEARING.
+                     *      (this is to ensure that the vehicle is updated on the map regardless)
+                     */
                     updateVehiclePromise.then((heading)=> {
                         if (existingMarker.data.rotationAngle !== heading) {               
                             trackuPruneCluster.RemoveMarkers([existingMarker]);             
-                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_POPUP, VEHICLE_DATA);
+                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
                             markers.push(updatedVehicleMarker);
                             trackuPruneCluster.RegisterMarker(updatedVehicleMarker);
+                            return;
                         }
                     }).catch(()=> {
-
+                        trackuPruneCluster.RemoveMarkers([existingMarker]);             
+                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
+                            markers.push(updatedVehicleMarker);
+                            trackuPruneCluster.RegisterMarker(updatedVehicleMarker);
+                            return;
                     });
 
                 break;
@@ -210,7 +261,7 @@ const plotDataOnMap = (vehicle) => {
         case false:
             switch (validCoordinates(VEHICLE_LATITUDE, VEHICLE_LONGITUDE)) {
                 case true:       
-                    const newVehicleMarker = generateVehicleMarker(VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_POPUP, VEHICLE_DATA);
+                    const newVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
                     markers.push(newVehicleMarker);
                     trackuPruneCluster.RegisterMarker(newVehicleMarker);
                 break;
@@ -230,6 +281,7 @@ const plotDataOnMap = (vehicle) => {
 /**
  * FUNCTION TO BUILD A VEHICLE-MARKER
  * ----------------------------------
+ * @param {UUID} clientId
  * @param {UUID} vehicleId
  * @param {String} vehicleName
  * @param {Double} vehicleLatitude
@@ -239,110 +291,35 @@ const plotDataOnMap = (vehicle) => {
  * @param {Object} markerData
  * @returns Object
  */
-let generateVehicleMarker = (vehicleId, vehicleName, vehicleLatitude, vehicleLongitude, vehicleHeading, popupBody, markerData) => {
+const generateVehicleMarker = (clientId, vehicleId, vehicleName, vehicleLatitude, vehicleLongitude, vehicleHeading, toolTipBody, markerData) => {
     const marker = new PruneCluster.Marker(vehicleLatitude, vehicleLongitude, {
         rotationAngle: vehicleHeading,
         rotationOrigin: 'center',
-        popup: popupBody,
+        tooltip: toolTipBody,
         icon: markerData.icon
     });
-
+    
     marker.category = markerData.category;
     marker.weight = markerData.weight;
     marker.data.name = vehicleName;
+    marker.data.clientId = clientId;
     marker.data.forceIconRedraw = true;
+    marker.data.tooltipOptions = {sticky: true, opacity: 1};
     marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`;
     return marker;
 };
 
 
 /**
- * FUNCTION TO BUILD THE POPUP WINDOW OF A VEHICLE-MARKER
- * ------------------------------------------------------
- * @param {String} vehicleName
- * @param {String} vehiclePlate
- * @param {String} vehicleModel
- * @param {String} vehicleStatus
- * @param {String} vehicleFleet
- * @param {String} vehicleEventTime
- */
-const createMarkerPopup = (vehicleName, vehiclePlate, vehicleModel, vehicleStatus, vehicleFleet, vehicleEventTime) => {
-    return `<div class="d-flex flex-column">
-                <div class="h6 font-weight-bold ml-2 d-flex justify-content-between">
-                    <span class="app-font-color">${vehicleName}</span>
-                    <span class="vehicle-moving-status bg-secondary">${vehiclePlate}</span>
-                </div>
-                <div class="app-font-color border-secondary">
-                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${vehicleModel}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${vehicleStatus}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${vehicleFleet}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(vehicleEventTime)}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(vehicleEventTime)}</em></span><br>
-                </div>
-            </div>`;
-};
-
-
-/**
- * FUNCTION TO CHECK IF A VEHICLE-MARKER EXISTS IN MARKER ARRAY
- * ------------------------------------------------------------
- * @param {String} vehicleId
- */
-const checkIfMarkerExists = vehicleId => {
-    let exists = false;
-    for(const existingMarker of markers) {
-        if (existingMarker.data.id === vehicleId) {
-            exists = true;
-        }
-    }
-    return exists;
-};
-
-
-/**
- * FUNCTION TO RETRIEVE AN EXISTING VEHICLE-MARKER FROM MARKER ARRAY
- * -----------------------------------------------------------------
- * @param {String} vehicleId
- */
-const getExistingMaker = vehicleId => {
-    let markerObject = new Object();
-    for(const existingMarker of markers) {
-        if (existingMarker.data.id === vehicleId) {
-            markerObject = existingMarker;
-        }
-    }    
-    return markerObject;
-};
-
-/**
- * FUNCTION TO CHECK IF COORDINATES PASSED ARE VALID.
- * -------------------------------------------------
- * @param latitude 
- * @param longitude
- * @return Boolean
- */
-const validCoordinates = (latitude, longitude) => {
-	if (latitude !== DOMStrings.notAvailable && longitude !== DOMStrings.notAvailable) {
-		if (latitude && longitude) {
-			return true;
-		}
-	} 
-	return false;
-};
-
-
-/**
  * FUNCTION TO DETERMINE VEHICLE ICON 
  * ----------------------------------
- * 
  * @param {String} vehicleId
  * @param {String} vehicleType
  * @param {String} vehicleEventTime
  * @param {String} vehicleSpeed
- * @param {String} vehicleHeading
  * @return {L.icon} leaflet icon
  */
-let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpeed, vehicleHeading) => {
+let buildMarkerIconData = (vehicleId, vehicleType, vehicleEventTime, vehicleSpeed) => {
 	if (vehicleType.toLowerCase().includes(`generator`)) {				
         if(vehicleUpdateDelayed(vehicleEventTime)) {
             return {
@@ -395,21 +372,82 @@ let setVehicleMarkerIcon = (vehicleId, vehicleType, vehicleEventTime, vehicleSpe
  * @return Boolean
  */
 let vehicleUpdateDelayed = eventTime => {
-	
-	//CURRENT DATE/TIME
-    const CURRENT_TIME = moment(new Date()); 						
-		
-    //DEVICE UPDATE DATE/TIME
-    const EVENT_TIME = moment(new Date(eventTime)); 				
-    
-    //DIFFERENCE BETWEEN BOTH DATE/TIMES
-    const DIFFERENCE = moment.duration(CURRENT_TIME.diff(EVENT_TIME));				
+    return moment(new Date()).diff(moment(new Date(eventTime)), 'hours') >= 4;
+};
 
-    const DELAYED_UPDATE_TIME = DIFFERENCE._milliseconds;
-    
-    if(DELAYED_UPDATE_TIME >= 14400000)
-        return true;
-    return false;	
+
+/**
+ * FUNCTION TO BUILD THE POPUP WINDOW OF A VEHICLE-MARKER
+ * ------------------------------------------------------
+ * @param {String} vehicleName
+ * @param {String} vehiclePlate
+ * @param {String} vehicleModel
+ * @param {String} vehicleStatus
+ * @param {String} vehicleFleet
+ * @param {String} vehicleEventTime
+ */
+const buildMarkerTooltip = (vehicleName, vehiclePlate, vehicleModel, vehicleStatus, vehicleFleet, vehicleEventTime) => {
+    return `<div class="d-flex flex-column">
+                <div class="h6 font-weight-bold ml-2 d-flex justify-content-between">
+                    <span class="app-font-color">${vehicleName}</span>
+                    <span class="vehicle-moving-status bg-secondary">${vehiclePlate}</span>
+                </div>
+                <div class="app-font-color border-secondary">
+                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${vehicleModel}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${vehicleStatus}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${vehicleFleet}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(vehicleEventTime)}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(vehicleEventTime)}</em></span><br>
+                </div>
+            </div>`;
+};
+
+
+/**
+ * FUNCTION TO CHECK IF A VEHICLE-MARKER EXISTS IN MARKER ARRAY
+ * ------------------------------------------------------------
+ * @param {String} vehicleId
+ */
+const checkIfVehicleMarkerExistsOnMap = vehicleId => {
+    let exists = false;
+    for(const existingMarker of markers) {
+        if (existingMarker.data.id === vehicleId) {
+            exists = true;
+        }
+    }
+    return exists;
+};
+
+
+/**
+ * FUNCTION TO RETRIEVE AN EXISTING VEHICLE-MARKER FROM MARKER ARRAY
+ * -----------------------------------------------------------------
+ * @param {String} vehicleId
+ */
+const getExistingVehicleMarker = vehicleId => {
+    let markerObject = new Object();
+    for(const existingMarker of markers) {
+        if (existingMarker.data.id === vehicleId) {
+            markerObject = existingMarker;
+        }
+    }    
+    return markerObject;
+};
+
+/**
+ * FUNCTION TO CHECK IF COORDINATES ARE VALID.
+ * -------------------------------------------
+ * @param latitude 
+ * @param longitude
+ * @return Boolean
+ */
+const validCoordinates = (latitude, longitude) => {
+	if (latitude !== DOMStrings.notAvailable && longitude !== DOMStrings.notAvailable) {
+		if (latitude && longitude) {
+			return true;
+		}
+	} 
+	return false;
 };
 
 
@@ -420,15 +458,24 @@ let vehicleUpdateDelayed = eventTime => {
  */
 let convertUTCDateToLocalDate = (eventDate) => {
 	
-	const DATE = new Date(eventDate);
-	const NEW_DATE = new Date(DATE.getTime() + DATE.getTimezoneOffset()*60*1000);
-	const OFFSET = DATE.getTimezoneOffset() / 60;
-	const HOURS = DATE.getHours();
+	let date = new Date(eventDate);
 
-	NEW_DATE.setHours(HOURS - OFFSET);
-	
-	const FINAL_DATE = NEW_DATE.toLocaleString();
-	return FINAL_DATE;  
+	let year = date.getFullYear(),
+        month = date.getMonth() + 1,
+        day = date.getDate(),
+	  	hour = date.getHours(),
+	  	minutes = date.getMinutes();
+
+	if(day < 10)
+	    day = '0' + day;
+	if(month < 10)
+		month = '0' + month;
+	if(hour < 10)
+		hour = '0' + hour;
+	if(minutes < 10)
+		minutes = '0' + minutes;
+
+	return day + '-' + month + '-' + year + " " + hour + ":" + minutes;
 };
 
 
