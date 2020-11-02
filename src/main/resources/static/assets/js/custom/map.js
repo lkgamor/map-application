@@ -154,7 +154,9 @@ const establishCentrifugoConnection = () => {
     CENTRIFUGE.setToken(DOMStrings.centrifugoToken);
     //SUBSCRIBE TO CHANNEL FOR RECEIVING PUBLISHED VEHICLES
     CENTRIFUGE.subscribe(DOMStrings.centrifugoChannel, (message)=> {
-        //console.log(message.data);
+        /** 
+         * Callback to process vehicle updates received from Backend 
+         */
         processDeviceForPlotting(message.data);
     });
     //ESTABLISH CONNECTION
@@ -187,13 +189,13 @@ const processDeviceForPlotting = (vehicle) => {
         statusCodeDescription: VEHICLE_STATUS = DOMStrings.notAvailable
     } = vehicle;    
     
-    /** Check if Vehicle Already Exists On Map */
+    /** Returns a Boolean value of whether Vehicle-Marker already exists on map */
     const markerAlreadyExists = checkIfVehicleMarkerExistsOnMap(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);
 
-    /** Get Vehicle Icon, Category & Weight */
+    /** Returns a Vehicle Icon Object containing the Icon-Image, Icon-Category & Icon-Weight */
     const VEHICLE_DATA = buildMarkerIconData(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED);
 
-    /** Build Vehicle Popup Content */
+    /** Returns an HTML Element to build the Vehicle-Marker Tooltip Content */
     const MARKER_TOOLTIP = buildMarkerTooltip(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
 
     switch (markerAlreadyExists) {
@@ -211,12 +213,12 @@ const processDeviceForPlotting = (vehicle) => {
                      * The importance of this logic is to limit how often a vehicle-marker is removed from the map. 
                      */
                     const updateVehiclePromise = new Promise((resolve, reject)=> {
-                        existingMarker.data.tooltip = MARKER_TOOLTIP;
                         existingMarker.position.lat = VEHICLE_LATITUDE;
                         existingMarker.position.lng = VEHICLE_LONGITUDE;                        
                         existingMarker.category = VEHICLE_DATA.category;
                         existingMarker.weight = VEHICLE_DATA.weight;
                         existingMarker.data.name = VEHICLE_NAME;
+                        existingMarker.data.tooltip = MARKER_TOOLTIP;
                         existingMarker.data.clientId = VEHICLE_CLIENT_ID;
                         trackuPruneCluster.ProcessView();
 
@@ -367,7 +369,6 @@ let buildMarkerIconData = (vehicleId, vehicleType, vehicleEventTime, vehicleSpee
 /**
  * FUNCTION TO CHECK IF VEHICLE UPDATE TIME HAS BEEN DELAYED
  * ---------------------------------------------------------
- * 
  * @param eventTime
  * @return Boolean
  */
@@ -458,7 +459,7 @@ const validCoordinates = (latitude, longitude) => {
  */
 let convertUTCDateToLocalDate = (eventDate) => {
 	
-	let date = new Date(eventDate);
+	const date = new Date(eventDate);
 
 	let year = date.getFullYear(),
         month = date.getMonth() + 1,
@@ -487,9 +488,9 @@ let convertUTCDateToLocalDate = (eventDate) => {
 let getUpdatesDuration = (eventTime) => {
 
 	let months, days, hours, mins, secs;
-	const NOW = moment(new Date());							//CURRENT DATE/TIME
+	const START = moment(new Date());							//CURRENT DATE/TIME
 	const END = moment(new Date(eventTime));				//DEVICE UPDATE DATE/TIME	
-	const DURATION = moment.duration(NOW.diff(END));		//DIFFERENCE BETWEEN BOTH DATE/TIMES
+	const DURATION = moment.duration(START.diff(END));		//DIFFERENCE BETWEEN BOTH DATE/TIMES
 
 	if(DURATION._data.months > 0) {
 		if(DURATION._data.months > 1)
