@@ -144,7 +144,84 @@ trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category
             return;
         });
     }
+};
 
+trackuPruneCluster.BuildLeafletCluster = function(cluster, position) {
+    
+    var _this = this;
+    var m = new L.Marker(position, {
+        icon: this.BuildLeafletClusterIcon(cluster)
+    });
+
+    m._leafletClusterBounds = cluster.bounds;
+    m.on(DOMEvents.click, function () {
+        var cbounds = m._leafletClusterBounds;
+        var markersArea = _this.Cluster.FindMarkersInArea(cbounds);
+        var b = _this.Cluster.ComputeBounds(markersArea);
+        if (b) {
+            var bounds = new L.LatLngBounds(new L.LatLng(b.minLat, b.maxLng), new L.LatLng(b.maxLat, b.minLng));
+            var zoomLevelBefore = _this._map.getZoom(), zoomLevelAfter = _this._map.getBoundsZoom(bounds, false, new L.Point(20, 20));
+            if (zoomLevelAfter === zoomLevelBefore) {
+                var filteredBounds = [];
+                for (var i = 0, l = _this._objectsOnMap.length; i < l; ++i) {
+                    var o = _this._objectsOnMap[i];
+                    if (o.data._leafletMarker !== m) {
+                        if (o.bounds.minLat >= cbounds.minLat &&
+                            o.bounds.maxLat <= cbounds.maxLat &&
+                            o.bounds.minLng >= cbounds.minLng &&
+                            o.bounds.maxLng <= cbounds.maxLng) {
+                            filteredBounds.push(o.bounds);
+                        }
+                    }
+                }
+                if (filteredBounds.length > 0) {
+                    var newMarkersArea = [];
+                    var ll = filteredBounds.length;
+                    for (i = 0, l = markersArea.length; i < l; ++i) {
+                        var markerPos = markersArea[i].position;
+                        var isFiltered = false;
+                        for (var j = 0; j < ll; ++j) {
+                            var currentFilteredBounds = filteredBounds[j];
+                            if (markerPos.lat >= currentFilteredBounds.minLat &&
+                                markerPos.lat <= currentFilteredBounds.maxLat &&
+                                markerPos.lng >= currentFilteredBounds.minLng &&
+                                markerPos.lng <= currentFilteredBounds.maxLng) {
+                                isFiltered = true;
+                                break;
+                            }
+                        }
+                        if (!isFiltered) {
+                            newMarkersArea.push(markersArea[i]);
+                        }
+                    }
+                    markersArea = newMarkersArea;
+                }
+                if (markersArea.length < 200 || zoomLevelAfter >= _this._map.getMaxZoom()) {
+                    _this._map.fire('overlappingmarkers', {
+                        cluster: _this,
+                        markers: markersArea,
+                        center: m.getLatLng(),
+                        marker: m
+                    });
+                }
+                else {
+                    zoomLevelAfter++;
+                }
+                _this._map.setView(m.getLatLng(), zoomLevelAfter);
+            }
+            else {
+                _this._map.fitBounds(bounds);
+            }
+        }
+    });
+
+    m.on(DOMEvents.mouseover, function() {
+
+        const clusterTooltip = buildClusterTooltip(cluster.stats);        
+        m.bindTooltip(clusterTooltip).openTooltip();
+    });
+
+    return m;
 };
 
 const establishCentrifugoConnection = () => {
@@ -405,6 +482,42 @@ const buildMarkerTooltip = (vehicleName, vehiclePlate, vehicleModel, vehicleStat
 
 
 /**
+ * FUNCTION TO BUILD THE POPUP WINDOW OF A CLUSTER
+ * -----------------------------------------------
+ * @param {Object} clusterStatisticsData
+ */
+const buildClusterTooltip = clusterStatisticsData => {
+
+    let faulty = '', inactive = '', active = '';
+    const {1: FAULTY_CATEGORY, 2: INACTIVE_CATEGORY, 3: ACTIVE_CATEGORY} = clusterStatisticsData;
+    if (FAULTY_CATEGORY > 0)
+        faulty = `<span class="popup-info"><i class="fas fa-chart-pie text-danger mr-1"></i> Faulty Devices: ${FAULTY_CATEGORY}</span><br>`;    
+    else
+        faulty = '';
+    if (INACTIVE_CATEGORY > 0)
+        inactive = `<span class="popup-info"><i class="fas fa-chart-pie text-secondary mr-1"></i> Inactive Devices: ${INACTIVE_CATEGORY}</span><br>`; 
+    else
+        inactive = '';   
+    if (ACTIVE_CATEGORY > 0)
+        active = `<span class="popup-info"><i class="fas fa-chart-pie app-font-color mr-1"></i> Active Devices: ${ACTIVE_CATEGORY}</span><br>`;
+    else
+        active = '';
+    
+    return `<div class="d-flex flex-column">
+                <div class="text-center">
+                    <span class="vehicle-moving-status font-weight-bold">CLUSTER STATISTICS</span>
+                </div>
+                <hr class="mt-1 mb-2">
+                <div class="app-font-color border-secondary">
+                    ${faulty}
+                    ${inactive}
+                    ${active}
+                </div>
+            </div>`;
+};
+
+
+/**
  * FUNCTION TO CHECK IF A VEHICLE-MARKER EXISTS IN MARKER ARRAY
  * ------------------------------------------------------------
  * @param {String} vehicleId
@@ -526,7 +639,7 @@ let getUpdatesDuration = (eventTime) => {
 			mins = `${DURATION._data.minutes} min and `;
 	}
 	else
-		mins = ``;
+		mins = '';
 
 	if(DURATION._data.seconds > 0) {
 		if(DURATION._data.seconds > 1)

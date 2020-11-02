@@ -9,7 +9,7 @@ const DOMStrings = {
 	notAvailable: 'N/A',
 	customTrackUVehicleMarkerClass: 'tracku__vehicle-marker',
 	centrifugoWebsocketUrl: 'wss://tracku.supercloud.com.gh/connection/websocket',
-	centrifugoToken: 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJUUkFDS1UtVjMiLCJhdWQiOiJDZW50cmlmdWdvIiwiaWF0IjoxNjAxNjUyNTI0LCJleHAiOjE2MDQzMzA5MjQsInN1YiI6IjRkYzYxODBhLTNhZDItNDcyMy1iNzJiLWFiYmY0NTMwMTAzYyJ9.2ZDHXLxL_LXQE7ejoZL7fxZFNCnm1QBSRVrquNg1OUo',
+	centrifugoToken: 'eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJUUkFDS1UtVjMiLCJhdWQiOiJDZW50cmlmdWdvIiwiaWF0IjoxNjA0MzMzMDA3LCJleHAiOjE2MDY5MjUwMDcsInN1YiI6IjRkYzYxODBhLTNhZDItNDcyMy1iNzJiLWFiYmY0NTMwMTAzYyJ9.dHiPPv7gBFFjdsDBSc8wsY9OL9bGzp31x-PuxcbEDSY',
 	centrifugoChannel: 'TrackU-Prod-V3',
 	CATEGORY_FAULTY: 1,
 	CATEGORY_INACTIVE: 2,
@@ -50,7 +50,8 @@ const DOMEndpoints = {
 const DOMEvents = {
 	click: 'click',
 	checked: 'checked',
-	change: 'change'
+	change: 'change',
+	mouseover: 'mouseover'
 }
 
 const DOMHTTPMethods = {
