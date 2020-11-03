@@ -88,15 +88,15 @@ trackuPruneCluster.BuildLeafletClusterIcon = function(cluster) {
     return e;
 };
 
-trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category) {
+trackuPruneCluster.PrepareLeafletMarker = function(flightMarker, data, category) {
     
     const TRACKING_MODE = localStorage.getItem(DOMStrings.trackingMode);
     if (data.icon) {
         if (typeof data.icon === 'function') {
-            vehicleMarker.setIcon(data.icon(data, category));
+            flightMarker.setIcon(data.icon(data, category));
         }
         else {
-            vehicleMarker.setIcon(data.icon);
+            flightMarker.setIcon(data.icon);
         }
     }
 
@@ -107,11 +107,11 @@ trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category
      */
     if (data.tooltip) {
         var content = typeof data.tooltip === 'function' ? data.tooltip(data, category) : data.tooltip;
-        if (vehicleMarker.getTooltip()) {
-            vehicleMarker.setTooltipContent(content, data.tooltipOptions);
+        if (flightMarker.getTooltip()) {
+            flightMarker.setTooltipContent(content, data.tooltipOptions);
         }
         else {
-            vehicleMarker.bindTooltip(content, data.tooltipOptions);
+            flightMarker.bindTooltip(content, data.tooltipOptions);
         }
     }
 
@@ -127,20 +127,20 @@ trackuPruneCluster.PrepareLeafletMarker = function(vehicleMarker, data, category
     *      In which case the .setRotationOrigin function that is native to the leaflet.rotatedMarker.js is invoked.
     */
     if (data.rotationAngle) {
-        vehicleMarker.setRotationAngle(data.rotationAngle);
+        flightMarker.setRotationAngle(data.rotationAngle);
     }
     if (data.rotationOrigin) {
-        vehicleMarker.setRotationOrigin(data.rotationOrigin);
+        flightMarker.setRotationOrigin(data.rotationOrigin);
     }
 
     if (TRACKING_MODE === `true`) {
-        //HIDE VEHICLE-MARKER WHEN IN TRACKING MODE			
+        //HIDE FLIGHT-MARKER WHEN IN TRACKING MODE			
         $(DOMClasses.customTrackUVehicleMarkerClass).hide();
     } else {
-        //ENABLE VEHICLE-MARKER CLICK EVENT ON MAP ONLY WHEN NOT IN TRACKING MODE
-        vehicleMarker.off(DOMEvents.click).on(DOMEvents.click, (event) => {           
+        //ENABLE FLIGHT-MARKER CLICK EVENT ON MAP ONLY WHEN NOT IN TRACKING MODE
+        flightMarker.off(DOMEvents.click).on(DOMEvents.click, (event) => {           
             console.log(`Clicked on [${data.name}] with clientId [${data.clientId}]`)
-            //showVehicleDetails(vehicleId, clientId);
+            //showVehicleDetails(flightId, clientId);
             return;
         });
     }
@@ -224,107 +224,125 @@ trackuPruneCluster.BuildLeafletCluster = function(cluster, position) {
     return m;
 };
 
-const establishCentrifugoConnection = () => {
-    //SET CENTRIFUGO CONNECTION INSTANCE
-    const CENTRIFUGE = new Centrifuge(DOMStrings.centrifugoWebsocketUrl);
-    //ADD HS256 ACCESS TOKEN FOR AUTHENTICATION
-    CENTRIFUGE.setToken(DOMStrings.centrifugoToken);
-    //SUBSCRIBE TO CHANNEL FOR RECEIVING PUBLISHED VEHICLES
-    CENTRIFUGE.subscribe(DOMStrings.centrifugoChannel, (message)=> {
-        /** 
-         * Callback to process vehicle updates received from Backend 
-         */
-        processDeviceForPlotting(message.data);
+const getApiData = () => {
+    $.ajax({
+        url: DOMEndpoints.getFlights,
+        beforeSend: ()=> {
+            NProgress.start();
+        },
+        success: (flights)=> {            
+            processDeviceForPlotting(flights.data);   
+            console.log(flights.data)  
+            setInterval(() => {
+                getApiData();
+            }, 30000);       
+        },
+        error: ()=> {
+            console.log("Error...")
+        },
+        complete: ()=> {
+            NProgress.done();
+            NProgress.remove();				
+        }
     });
-    //ESTABLISH CONNECTION
-    CENTRIFUGE.connect();
 };
-establishCentrifugoConnection();
-
+getApiData();
 
 /**
- * FUNCTION TO PLOT VEHICLE-MARKER ON MAP
+ * FUNCTION TO PLOT FLIGHT-MARKER ON MAP
  * --------------------------------------
- * @param {Object} vehicle
+ * @param {Object} flight
  */
-const processDeviceForPlotting = (vehicle) => {
+const processDeviceForPlotting = (flight) => {
     
-    /** Initialise all required vehicle data from {vehicle} response */
+    /** Initialise all required flight data from {flight} response */
     const {
-        vehicleId: VEHICLE_ID, 
-        name: VEHICLE_NAME, 
-        typeName: VEHICLE_TYPE, 
-        clientId: VEHICLE_CLIENT_ID, 
-        latitude: VEHICLE_LATITUDE, 
-        longitude: VEHICLE_LONGITUDE, 
-        licensePlate: VEHICLE_PLATE, 
-        presentSpeed: VEHICLE_SPEED, 
-        presentHeading: VEHICLE_HEADING, 
-        presentEventTime: VEHICLE_EVENT_TIME, 
-        fleetName: VEHICLE_FLEET = DOMStrings.notAvailable, 
-        model: VEHICLE_MODEL = DOMStrings.notAvailable, 
-        statusCodeDescription: VEHICLE_STATUS = DOMStrings.notAvailable
-    } = vehicle;    
+        airline: AIRLINE,
+        aircraft: AIRCRAFT,
+        flight: FLIGHT_INFO, 
+        live: FLIGHT_LIVE_INFO
+    } = flight;    
     
+    const {
+        name: FLIGHT_NAME,
+    } = AIRLINE;
+
+    const {
+        registration: FLIGHT_PLATE,
+        iata: FLIGHT_MODEL
+    } = AIRCRAFT;
+
+    const {
+        number: FLIGHT_ID,
+    } = FLIGHT_INFO;
+
+    const {
+        latitude: FLIGHT_LATITUDE,
+        longitude: FLIGHT_LONGITUDE,
+        updated: FLIGHT_EVENT_TIME,
+        direction: FLIGHT_HEADING,
+        speed_horizontal: FLIGHT_SPEED,
+        is_ground: FLIGHT_STATUS
+    } = FLIGHT_LIVE_INFO;
+
     /** Returns a Boolean value of whether Vehicle-Marker already exists on map */
-    const markerAlreadyExists = checkIfVehicleMarkerExistsOnMap(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);
+    const markerAlreadyExists = checkIfVehicleMarkerExistsOnMap(`${DOMStrings.customTrackUVehicleMarkerClass}${FLIGHT_ID}`);
 
     /** Returns a Vehicle Icon Object containing the Icon-Image, Icon-Category & Icon-Weight */
-    const VEHICLE_DATA = buildMarkerIconData(VEHICLE_ID, VEHICLE_TYPE, VEHICLE_EVENT_TIME, VEHICLE_SPEED);
+    const FLIGHT_DATA = buildMarkerIconData(FLIGHT_ID, FLIGHT_EVENT_TIME, FLIGHT_SPEED);
 
     /** Returns an HTML Element to build the Vehicle-Marker Tooltip Content */
-    const MARKER_TOOLTIP = buildMarkerTooltip(VEHICLE_NAME, VEHICLE_PLATE, VEHICLE_MODEL, VEHICLE_STATUS, VEHICLE_FLEET, VEHICLE_EVENT_TIME);
+    const MARKER_TOOLTIP = buildMarkerTooltip(FLIGHT_NAME, FLIGHT_PLATE, FLIGHT_MODEL, FLIGHT_STATUS, FLIGHT_EVENT_TIME);
 
     switch (markerAlreadyExists) {
         case true:
-            const existingMarker = getExistingVehicleMarker(`${DOMStrings.customTrackUVehicleMarkerClass}${VEHICLE_ID}`);     
+            const existingMarker = getExistingVehicleMarker(`${DOMStrings.customTrackUVehicleMarkerClass}${FLIGHT_ID}`);     
             switch (validCoordinates(existingMarker.position.lat, existingMarker.position.lng)) {
                 case true:
 
                     /**
-                     * Return a promise that updates vehicle-marker tooltip and location on the map
+                     * Return a promise that updates flight-marker tooltip and location on the map
                      * 
-                     * <em> If this promise is resolved, return the new bearing of the vehicle.
+                     * <em> If this promise is resolved, return the new bearing of the flight.
                      * <em> If this promise is rejected, do not return anything.
                      * 
-                     * The importance of this logic is to limit how often a vehicle-marker is removed from the map. 
+                     * The importance of this logic is to limit how often a flight-marker is removed from the map. 
                      */
                     const updateVehiclePromise = new Promise((resolve, reject)=> {
-                        existingMarker.position.lat = VEHICLE_LATITUDE;
-                        existingMarker.position.lng = VEHICLE_LONGITUDE;                        
-                        existingMarker.category = VEHICLE_DATA.category;
-                        existingMarker.weight = VEHICLE_DATA.weight;
-                        existingMarker.data.name = VEHICLE_NAME;
+                        existingMarker.position.lat = FLIGHT_LATITUDE;
+                        existingMarker.position.lng = FLIGHT_LONGITUDE;                        
+                        existingMarker.category = FLIGHT_DATA.category;
+                        existingMarker.weight = FLIGHT_DATA.weight;
+                        existingMarker.data.name = FLIGHT_NAME;
                         existingMarker.data.tooltip = MARKER_TOOLTIP;
-                        existingMarker.data.clientId = VEHICLE_CLIENT_ID;
                         trackuPruneCluster.ProcessView();
 
-                        resolve(VEHICLE_HEADING);
+                        resolve(FLIGHT_HEADING);
                     });
 
                     /**
-                     * If this promise is resolved, return the new bearing of the vehicle:
+                     * If this promise is resolved, return the new bearing of the flight:
                      * 
-                     * <em> If this new bearing is similar to the previous bearing of the vehicle (i.e vehicle has not changed its direction), 
+                     * <em> If this new bearing is similar to the previous bearing of the flight (i.e flight has not changed its direction), 
                      *      DO NOTHING.
-                     * <em> However if the new bearing is different from the previous bearing (i.e vehicle has changed its direction)
-                     *      REMOVE VEHICLE-MARKER FROM MAP AND PLOT A NEW ONE USING THE NEW BEARING.
+                     * <em> However if the new bearing is different from the previous bearing (i.e flight has changed its direction)
+                     *      REMOVE FLIGHT-MARKER FROM MAP AND PLOT A NEW ONE USING THE NEW BEARING.
                      * 
                      * If this promise is rejected:
-                     *      REMOVE VEHICLE-MARKER FROM MAP ANYWAY, AND PLOT A NEW ONE USING THE NEW BEARING.
-                     *      (this is to ensure that the vehicle is updated on the map regardless)
+                     *      REMOVE FLIGHT-MARKER FROM MAP ANYWAY, AND PLOT A NEW ONE USING THE NEW BEARING.
+                     *      (this is to ensure that the flight is updated on the map regardless)
                      */
                     updateVehiclePromise.then((heading)=> {
                         if (existingMarker.data.rotationAngle !== heading) {               
                             trackuPruneCluster.RemoveMarkers([existingMarker]);             
-                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
+                            const updatedVehicleMarker = generateVehicleMarker(FLIGHT_ID, FLIGHT_NAME, FLIGHT_LATITUDE, FLIGHT_LONGITUDE, FLIGHT_HEADING, MARKER_TOOLTIP, FLIGHT_DATA);
                             markers.push(updatedVehicleMarker);
                             trackuPruneCluster.RegisterMarker(updatedVehicleMarker);
                             return;
                         }
                     }).catch(()=> {
                         trackuPruneCluster.RemoveMarkers([existingMarker]);             
-                            const updatedVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
+                            const updatedVehicleMarker = generateVehicleMarker(FLIGHT_ID, FLIGHT_NAME, FLIGHT_LATITUDE, FLIGHT_LONGITUDE, FLIGHT_HEADING, MARKER_TOOLTIP, FLIGHT_DATA);
                             markers.push(updatedVehicleMarker);
                             trackuPruneCluster.RegisterMarker(updatedVehicleMarker);
                             return;
@@ -338,9 +356,9 @@ const processDeviceForPlotting = (vehicle) => {
         break;
 
         case false:
-            switch (validCoordinates(VEHICLE_LATITUDE, VEHICLE_LONGITUDE)) {
+            switch (validCoordinates(FLIGHT_LATITUDE, FLIGHT_LONGITUDE)) {
                 case true:       
-                    const newVehicleMarker = generateVehicleMarker(VEHICLE_CLIENT_ID, VEHICLE_ID, VEHICLE_NAME, VEHICLE_LATITUDE, VEHICLE_LONGITUDE, VEHICLE_HEADING, MARKER_TOOLTIP, VEHICLE_DATA);
+                    const newVehicleMarker = generateVehicleMarker(FLIGHT_ID, FLIGHT_NAME, FLIGHT_LATITUDE, FLIGHT_LONGITUDE, FLIGHT_HEADING, MARKER_TOOLTIP, FLIGHT_DATA);
                     markers.push(newVehicleMarker);
                     trackuPruneCluster.RegisterMarker(newVehicleMarker);
                 break;
@@ -358,21 +376,20 @@ const processDeviceForPlotting = (vehicle) => {
 
 
 /**
- * FUNCTION TO BUILD A VEHICLE-MARKER
+ * FUNCTION TO BUILD A FLIGHT-MARKER
  * ----------------------------------
- * @param {UUID} clientId
- * @param {UUID} vehicleId
- * @param {String} vehicleName
- * @param {Double} vehicleLatitude
- * @param {Double} vehicleLongitude
- * @param {Integer} vehicleHeading
+ * @param {UUID} flightId
+ * @param {String} flightName
+ * @param {Double} flightLatitude
+ * @param {Double} flightLongitude
+ * @param {Integer} flightHeading
  * @param {HTML} popupBody
  * @param {Object} markerData
  * @returns Object
  */
-const generateVehicleMarker = (clientId, vehicleId, vehicleName, vehicleLatitude, vehicleLongitude, vehicleHeading, toolTipBody, markerData) => {
-    const marker = new PruneCluster.Marker(vehicleLatitude, vehicleLongitude, {
-        rotationAngle: vehicleHeading,
+const generateVehicleMarker = (flightId, flightName, flightLatitude, flightLongitude, flightHeading, toolTipBody, markerData) => {
+    const marker = new PruneCluster.Marker(flightLatitude, flightLongitude, {
+        rotationAngle: flightHeading,
         rotationOrigin: 'center',
         tooltip: toolTipBody,
         icon: markerData.icon
@@ -380,102 +397,77 @@ const generateVehicleMarker = (clientId, vehicleId, vehicleName, vehicleLatitude
     
     marker.category = markerData.category;
     marker.weight = markerData.weight;
-    marker.data.name = vehicleName;
-    marker.data.clientId = clientId;
+    marker.data.name = flightName;
     marker.data.forceIconRedraw = true;
     marker.data.tooltipOptions = {sticky: true, opacity: 1};
-    marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`;
+    marker.data.id = `${DOMStrings.customTrackUVehicleMarkerClass}${flightId}`;
     return marker;
 };
 
 
 /**
- * FUNCTION TO DETERMINE VEHICLE ICON 
+ * FUNCTION TO DETERMINE FLIGHT ICON 
  * ----------------------------------
- * @param {String} vehicleId
- * @param {String} vehicleType
- * @param {String} vehicleEventTime
- * @param {String} vehicleSpeed
+ * @param {String} flightId
+ * @param {String} flightEventTime
+ * @param {String} flightSpeed
  * @return {L.icon} leaflet icon
  */
-let buildMarkerIconData = (vehicleId, vehicleType, vehicleEventTime, vehicleSpeed) => {
-	if (vehicleType.toLowerCase().includes(`generator`)) {				
-        if(vehicleUpdateDelayed(vehicleEventTime)) {
-            return {
-                'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
-                'category': parseInt(DOMStrings.CATEGORY_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_faulty.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
-            }
-        } else {
-            if (vehicleSpeed < 1)
-                return {
-                    'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
-                    'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_inactive.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
-                }
-            return {
-                'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
-                'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/gen_active.png`, iconSize: [22, 25], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
-            }
-        }							
+let buildMarkerIconData = (flightId, flightEventTime, flightSpeed) => {
+	if(flightUpdateDelayed(flightEventTime)) {
+        return {
+            'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
+            'category': parseInt(DOMStrings.CATEGORY_FAULTY),
+            'icon': L.icon({iconUrl: `${CONTEXT}assets/images/flight_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${flightId}`})
+        }
     } else {
-        if(vehicleUpdateDelayed(vehicleEventTime)) {
+        if (flightSpeed < 1)
             return {
-                'weight': parseInt(DOMStrings.CATEGORY_FAULTY),
-                'category': parseInt(DOMStrings.CATEGORY_FAULTY),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_faulty.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
+                'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
+                'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
+                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/flight_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${flightId}`})
             }
-        } else {
-            if (vehicleSpeed < 1)
-                return {
-                    'weight': parseInt(DOMStrings.CATEGORY_INACTIVE),
-                    'category': parseInt(DOMStrings.CATEGORY_INACTIVE),
-                    'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_stopped.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
-                }
-            return {
-                'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
-                'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
-                'icon': L.icon({iconUrl: `${CONTEXT}assets/images/vehicle_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${vehicleId}`})
-            }
+        return {
+            'weight': parseInt(DOMStrings.CATEGORY_ACTIVE),
+            'category': parseInt(DOMStrings.CATEGORY_ACTIVE),
+            'icon': L.icon({iconUrl: `${CONTEXT}assets/images/flight_moving.png`, iconSize: [28, 42], className: `${DOMStrings.customTrackUVehicleMarkerClass}${flightId}`})
         }
     }
 };
 
 
 /**
- * FUNCTION TO CHECK IF VEHICLE UPDATE TIME HAS BEEN DELAYED
+ * FUNCTION TO CHECK IF FLIGHT UPDATE TIME HAS BEEN DELAYED
  * ---------------------------------------------------------
  * @param eventTime
  * @return Boolean
  */
-let vehicleUpdateDelayed = eventTime => {
+let flightUpdateDelayed = eventTime => {
     return moment(new Date()).diff(moment(new Date(eventTime)), 'hours') >= 4;
 };
 
 
 /**
- * FUNCTION TO BUILD THE POPUP WINDOW OF A VEHICLE-MARKER
+ * FUNCTION TO BUILD THE POPUP WINDOW OF A FLIGHT-MARKER
  * ------------------------------------------------------
- * @param {String} vehicleName
- * @param {String} vehiclePlate
- * @param {String} vehicleModel
- * @param {String} vehicleStatus
- * @param {String} vehicleFleet
- * @param {String} vehicleEventTime
+ * @param {String} flightName
+ * @param {String} flightPlate
+ * @param {String} flightModel
+ * @param {String} flightStatus
+ * @param {String} flightEventTime
  */
-const buildMarkerTooltip = (vehicleName, vehiclePlate, vehicleModel, vehicleStatus, vehicleFleet, vehicleEventTime) => {
+const buildMarkerTooltip = (flightName, flightPlate, flightModel, flightStatus, flightEventTime) => {
     return `<div class="d-flex flex-column">
                 <div class="h6 font-weight-bold ml-2 d-flex justify-content-between">
-                    <span class="app-font-color">${vehicleName}</span>
-                    <span class="vehicle-moving-status bg-secondary">${vehiclePlate}</span>
+                    <span class="app-font-color">${flightName}</span>
+                    <span class="flight-moving-status bg-secondary">${flightPlate}</span>
                 </div>
                 <div class="app-font-color border-secondary">
-                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${vehicleModel}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${vehicleStatus}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${vehicleFleet}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(vehicleEventTime)}</em></span><br>
-                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(vehicleEventTime)}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-truck mr-1"></i>Model: <em class="text-uppercase">${flightModel}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-info-circle mr-1"></i> Status: <em class="text-uppercase">${flightStatus}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-layer-group mr-1"></i> Fleet: <em class="text-uppercase">${flightFleet}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-calendar mr-1"></i> Date: <em class="text-uppercase">${convertUTCDateToLocalDate(flightEventTime)}</em></span><br>
+                    <span class="popup-info"><i class="fas fa-clock mr-1"></i> Updated: <em class="text-capitalize">${getUpdatesDuration(flightEventTime)}</em></span><br>
                 </div>
             </div>`;
 };
@@ -492,20 +484,14 @@ const buildClusterTooltip = clusterStatisticsData => {
     const {1: FAULTY_CATEGORY, 2: INACTIVE_CATEGORY, 3: ACTIVE_CATEGORY} = clusterStatisticsData;
     if (FAULTY_CATEGORY > 0)
         faulty = `<span class="popup-info"><i class="fas fa-chart-pie text-danger mr-1"></i> Faulty Devices: ${FAULTY_CATEGORY}</span><br>`;    
-    else
-        faulty = '';
     if (INACTIVE_CATEGORY > 0)
-        inactive = `<span class="popup-info"><i class="fas fa-chart-pie text-secondary mr-1"></i> Inactive Devices: ${INACTIVE_CATEGORY}</span><br>`; 
-    else
-        inactive = '';   
+        inactive = `<span class="popup-info"><i class="fas fa-chart-pie text-secondary mr-1"></i> Inactive Devices: ${INACTIVE_CATEGORY}</span><br>`;   
     if (ACTIVE_CATEGORY > 0)
         active = `<span class="popup-info"><i class="fas fa-chart-pie app-font-color mr-1"></i> Active Devices: ${ACTIVE_CATEGORY}</span><br>`;
-    else
-        active = '';
     
     return `<div class="d-flex flex-column">
                 <div class="text-center">
-                    <span class="vehicle-moving-status font-weight-bold">CLUSTER STATISTICS</span>
+                    <span class="flight-moving-status font-weight-bold">CLUSTER STATISTICS</span>
                 </div>
                 <hr class="mt-1 mb-2">
                 <div class="app-font-color border-secondary">
@@ -518,14 +504,14 @@ const buildClusterTooltip = clusterStatisticsData => {
 
 
 /**
- * FUNCTION TO CHECK IF A VEHICLE-MARKER EXISTS IN MARKER ARRAY
+ * FUNCTION TO CHECK IF A FLIGHT-MARKER EXISTS IN MARKER ARRAY
  * ------------------------------------------------------------
- * @param {String} vehicleId
+ * @param {String} flightId
  */
-const checkIfVehicleMarkerExistsOnMap = vehicleId => {
+const checkIfVehicleMarkerExistsOnMap = flightId => {
     let exists = false;
     for(const existingMarker of markers) {
-        if (existingMarker.data.id === vehicleId) {
+        if (existingMarker.data.id === flightId) {
             exists = true;
         }
     }
@@ -534,14 +520,14 @@ const checkIfVehicleMarkerExistsOnMap = vehicleId => {
 
 
 /**
- * FUNCTION TO RETRIEVE AN EXISTING VEHICLE-MARKER FROM MARKER ARRAY
+ * FUNCTION TO RETRIEVE AN EXISTING FLIGHT-MARKER FROM MARKER ARRAY
  * -----------------------------------------------------------------
- * @param {String} vehicleId
+ * @param {String} flightId
  */
-const getExistingVehicleMarker = vehicleId => {
+const getExistingVehicleMarker = flightId => {
     let markerObject = new Object();
     for(const existingMarker of markers) {
-        if (existingMarker.data.id === vehicleId) {
+        if (existingMarker.data.id === flightId) {
             markerObject = existingMarker;
         }
     }    
