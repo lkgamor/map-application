@@ -13,49 +13,209 @@
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/fontawesome-free-5.5.0/css/all.min.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/bootstrap/bootstrap.min.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/leaflet/leaflet.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/leaflet/gh-fork-ribbon.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/nprogress/nprogress.css}">
 	<link rel="stylesheet" th:href="@{/assets/css/vendor/sweetalert/sweetalert.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/vendor/prune/prune.css}">
     <link rel="stylesheet" th:href="@{/assets/css/custom/map.css}">
-    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css'/>
-
-    <noscript><link rel="stylesheet" th:href="@{/assets/css/no_script.css}"></noscript>	
-    
-    <script src='https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js'></script>
+	<link rel="stylesheet" href="https://use.typekit.net/eai0koz.css">
+    <noscript><link rel="stylesheet" th:href="@{/assets/css/no_script.css}"></noscript>
 </head>
 
 <body>			
     
     <section>
-        <nav></nav>
-        <main>
-        	<div class="map__top">
-        		<input class="form-control shadow-sm" type="search" placeholder="Find a place">
+
+		<nav class="map__sidebar">
+			<div class="sidebar__logo">
+				<button class="logo"></button>
+				<span class="logo-text" th:text="${applicationName}"></span>
+			</div>
+
+			<aside class="sidebar__content">
+				<div class="watchlist__header">
+					<h3 class="watchlist__header-title text--purple">Watchlist</h3>
+					<button class="btn watchlist__header-total" id="total-watchlist">
+						0
+					</button>
+				</div>
+				<div class="watchlist__body">
+					<div class="watchlist__body-title">
+						<h6 class="text--purple">Watchlist</h6>
+						<h6 class="text--gray">
+							Trending <i class="fas fa-angle-down"></i>
+						</h6>
+					</div>
+					<div class="watchlist__content">
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/tesla.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">TSLA</span> 
+								<span class="price  text--gray">$352.70</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>1.12%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="tesla" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/appl.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">APPL</span>
+								<span class="price  text--gray">$270.77</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-down mr-1"></i> <span>0.85%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="appl" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/google.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">GOOGL</span>
+								<span class="price  text--gray">$1,344.25</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>1.10%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="google" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/work.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">WORK</span> 
+								<span class="price  text--gray">$20.75</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>6.75%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="work" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/tesla.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">SHOP</span>
+								<span class="price  text--gray">$372.08</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>1.38%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="tesla" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/appl.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">TEST</span>
+								<span class="price  text--gray">$372.08</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>1.38%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="appl" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/google.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">PHASE</span> 
+								<span class="price  text--gray">$372.08</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>1.38%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="google" aria-label="Check Watchlist">
+							</div>
+						</div>
+						<div class="watchlist__card">
+							<div class="watchlist__logo">
+								<img alt="Tesla" th:src="@{/assets/images/work.jpg}">
+							</div>
+							<div class="watchlist__name">
+								<span class="abrev text--purple">MAEYO</span> 
+								<span class="price  text--gray">$372.08</span>
+							</div>
+							<div class="watchlist__rating">
+								<i class="fas fa-arrow-up mr-1"></i> <span>2.38%</span>
+							</div>
+							<div class="watchlist__preference">
+								<input type="checkbox" class="watchlist__checkbox" value="work" aria-label="Check Watchlist">
+							</div>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</nav>
+
+		<main class="map__body">
+        	<div class="map__body--top">
+        		<input class="form-control" type="search" placeholder="Find a place">
+				<div class="map__types">
+					<button class="btn map__types-button" id="mapbox-button">MapBox</button>
+					<button class="btn map__types-button" id="bing-button">Bing</button>
+					<button class="btn map__types-button" id="openstreet-button">OpenStreet</button>
+					<button class="btn map__types-button" id="google-button">Google</button>
+				</div>
+			</div>
+        	<div class="map__body--main" id="map"></div>
+        	<div class="map__body--bottom">
+        		<div class="map__body--bottom-container">
+					<!-- SELECTED WATCHLISTS GO HERE -->
+        		</div>
         	</div>
-        	<div class="map__body" id="map"></div>
-        	<div class="map__bottom"></div>
         </main>
     </section>
     
 	<script th:src="@{/assets/js/vendor/jquery/jquery.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/jquery/jquery-3.3.1.min.js}"></script>
-	<script th:src="@{/assets/js/vendor/jquery/jquery-ui.min.js}"></script>	
+	<script th:src="@{/assets/js/vendor/jquery/jquery-ui.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/moment/moment.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/nprogress/nprogress.js}"></script>
 	<script th:src="@{/assets/js/vendor/bootstrap/bootstrap.min.js}"></script>
     <script th:src="@{/assets/js/vendor/sweetalert/sweetalert.min.js}"></script>
+    <script th:src="@{/assets/js/vendor/centrifugal/centrifuge.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/leaflet.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/L.Icon.Pulse.js}"></script>
     <script th:src="@{/assets/js/vendor/leaflet/esri-leaflet-geocoder.js}"></script>
+	<script th:src="@{/assets/js/vendor/leaflet/leaflet.rotatedMarker.js}"></script>
+    <script th:src="@{/assets/js/vendor/bing/bing-layer.js}"></script>
+	<script th:src="@{/assets/js/vendor/prune/PruneCluster.js}"></script>
     
     <script th:inline="javascript">
 		const CONTEXT = [[@{/}]];
-		const MAP_KEY = [[${mapKey}]];
-		NProgress.configure({showSpinner: false});
+		const BINGMAP_KEY = [[${bingKey}]];
+		const MAPBOX_KEY = [[${mapboxKey}]];
+		const APPLICATION_NAME = [[${applicationName}]];
     </script>
-
+	<script th:src="@{/assets/js/custom/init.js}" type="module"></script>
     <script th:src="@{/assets/js/custom/map.js}" type="module"></script>
-
+	
 	<!-- NOSCRIPT PROMPT IF JS IS DISABLED -->
 	<noscript>
 		<div id="noscript">

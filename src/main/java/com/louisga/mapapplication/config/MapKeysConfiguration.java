@@ -7,8 +7,9 @@ import lombok.Data;
 
 @Data
 @Configuration
-@ConfigurationProperties("map")
-public class MapConfigurations {
+@ConfigurationProperties("keys")
+public class MapKeysConfiguration {
     
-    private String key;
+    private String bingKey;
+    private String mapboxKey;
 }
